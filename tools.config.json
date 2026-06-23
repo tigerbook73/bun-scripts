@@ -1,0 +1,7 @@
+[
+  {
+    "src": "src/run-package-scripts.ts",
+    "name": "r",
+    "dir": "~/.local/bin"
+  }
+]
