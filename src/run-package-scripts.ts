@@ -1,18 +1,38 @@
 #!/usr/bin/env -S bun --env-file /dev/null
 
+/**
+ * run-package-scripts (r)
+ *
+ * Fuzzy script picker for npm/pnpm/yarn/bun workspaces.
+ *
+ * - Auto-detects the package manager from lock files.
+ * - Collects scripts from the root package.json and all workspace packages.
+ * - In a monorepo, scripts are prefixed by package name (e.g. `api/build`);
+ *   root-level scripts use the `root/` prefix.
+ * - With no query, opens an fzf picker. With a query, runs directly if there
+ *   is exactly one fuzzy match, otherwise pre-fills the fzf search.
+ * - If the query matches no scripts, forwards it to the package manager as-is.
+ *
+ * Usage:
+ *   r                    Open fzf picker
+ *   r <query>            Filter scripts by fuzzy query
+ *   r <query> -- <args>  Pass extra args to the script
+ *   r --help             Show this help
+ */
+
 import { existsSync, readFileSync } from "node:fs";
 import { Glob } from "bun";
 
 type PackageManager = "pnpm" | "bun" | "yarn" | "npm";
 
-interface ScriptEntry {
+export interface ScriptEntry {
   filter: string | null;
   script: string;
 }
 
 // Pure helpers — no instance state needed
 
-function detectPackageManager(): PackageManager {
+export function detectPackageManager(): PackageManager {
   if (existsSync("pnpm-lock.yaml")) return "pnpm";
   if (existsSync("bun.lock") || existsSync("bun.lockb")) return "bun";
   if (existsSync("yarn.lock")) return "yarn";
@@ -21,7 +41,7 @@ function detectPackageManager(): PackageManager {
 }
 
 /** Minimal parser for pnpm-workspace.yaml — only needs the packages list */
-function parsePnpmWorkspace(content: string): string[] {
+export function parsePnpmWorkspace(content: string): string[] {
   const patterns: string[] = [];
   let inPackages = false;
 
@@ -44,7 +64,7 @@ function parsePnpmWorkspace(content: string): string[] {
   return patterns;
 }
 
-function fuzzyMatch(str: string, query: string): boolean {
+export function fuzzyMatch(str: string, query: string): boolean {
   let i = 0;
   for (const ch of str) {
     if (ch === query[i]) i++;
@@ -53,7 +73,26 @@ function fuzzyMatch(str: string, query: string): boolean {
   return false;
 }
 
-class PackageScriptRunner {
+export function buildRunArgs(
+  pm: PackageManager,
+  filter: string | null,
+  script: string,
+  extra: string[],
+): string[] {
+  if (!filter) return ["run", script, ...extra];
+
+  switch (pm) {
+    case "pnpm":
+    case "bun":
+      return ["--filter", filter, "run", script, ...extra];
+    case "yarn":
+      return ["workspace", filter, script, ...extra];
+    case "npm":
+      return ["run", script, `--workspace=${filter}`, ...extra];
+  }
+}
+
+export class PackageScriptRunner {
   private readonly pm: PackageManager;
   private readonly query: string;
   private readonly extra: string[];
@@ -64,6 +103,10 @@ class PackageScriptRunner {
     this.query = process.argv[2] ?? "";
     this.extra = process.argv.slice(3);
     this.scriptsMap = this.collectScripts();
+  }
+
+  getScriptsMap(): Map<string, ScriptEntry> {
+    return this.scriptsMap;
   }
 
   run(): void {
@@ -124,7 +167,7 @@ class PackageScriptRunner {
     const target = this.scriptsMap.get(selected);
     if (!target) return;
 
-    const args = this.buildRunArgs(target.filter, target.script);
+    const args = buildRunArgs(this.pm, target.filter, target.script, this.extra);
     console.log(`\n🚀 Executing: ${this.pm} ${args.join(" ")}\n`);
     const result = Bun.spawnSync([this.pm, ...args], {
       stdin: "inherit",
@@ -132,20 +175,6 @@ class PackageScriptRunner {
       stderr: "inherit",
     });
     process.exit(result.exitCode ?? 1);
-  }
-
-  private buildRunArgs(filter: string | null, script: string): string[] {
-    if (!filter) return ["run", script, ...this.extra];
-
-    switch (this.pm) {
-      case "pnpm":
-      case "bun":
-        return ["--filter", filter, "run", script, ...this.extra];
-      case "yarn":
-        return ["workspace", filter, script, ...this.extra];
-      case "npm":
-        return ["run", script, `--workspace=${filter}`, ...this.extra];
-    }
   }
 
   private collectScripts(): Map<string, ScriptEntry> {
@@ -230,4 +259,35 @@ class PackageScriptRunner {
   }
 }
 
-new PackageScriptRunner().run();
+function printHelp(): void {
+  console.log(`\
+Usage: r [query] [-- ...args]
+
+Fuzzy script picker for npm/pnpm/yarn/bun workspaces.
+
+Examples:
+  r                  Open fzf picker with all available scripts
+  r build            Run the script matching "build" (direct if unique)
+  r build -- --watch Pass extra args to the matched script
+  r tsc              If no script matches, forwards to the package manager
+
+Script naming in monorepos:
+  api/build          Script "build" in workspace package "api"
+  root/lint          Script "lint" at the repo root
+
+Options:
+  -h, --help         Show this help message
+
+Requirements:
+  fzf must be on your PATH (https://github.com/junegunn/fzf)
+`);
+}
+
+if (import.meta.main) {
+  const arg = process.argv[2];
+  if (arg === "--help" || arg === "-h") {
+    printHelp();
+    process.exit(0);
+  }
+  new PackageScriptRunner().run();
+}
