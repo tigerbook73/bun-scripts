@@ -29,7 +29,7 @@ export interface ColorPalette {
 export function makeColorPalette(enabled = pc.isColorSupported): ColorPalette {
   const c = pc.createColors(enabled);
   return {
-    comment: (t) => c.dim(c.green(t)),
+    comment: (t) => c.dim(c.greenBright(t)),
     ok: (t) => c.green(t),
     error: (t) => c.red(t),
     muted: (t) => c.dim(t),
