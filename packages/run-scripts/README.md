@@ -30,7 +30,7 @@ npm install -g @tigerbook/run-scripts
 brew install fzf
 
 # Linux
-sudo apt install fzf   # or: sudo dnf install fzf
+sudo apt install fzf
 
 # Windows (winget)
 winget install fzf
@@ -80,12 +80,12 @@ r add lodash     # → runs: pnpm add lodash
 
 `r` automatically detects the package manager by checking for lock files:
 
-| Lock file          | Package manager |
-| ------------------ | --------------- |
-| `pnpm-lock.yaml`   | pnpm            |
-| `bun.lock`         | bun             |
-| `yarn.lock`        | yarn            |
-| `package-lock.json`| npm             |
+| Lock file           | Package manager |
+| ------------------- | --------------- |
+| `pnpm-lock.yaml`    | pnpm            |
+| `bun.lock`          | bun             |
+| `yarn.lock`         | yarn            |
+| `package-lock.json` | npm             |
 
 Must be run from the project root (directory containing `package.json`).
 
