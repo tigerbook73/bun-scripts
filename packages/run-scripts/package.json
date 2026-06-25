@@ -5,6 +5,11 @@
   "description": "Fuzzy package script selector for npm/pnpm/yarn/bun workspaces",
   "license": "MIT",
   "author": "tigerbook",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tigerbook73/bun-scripts",
+    "directory": "packages/run-scripts"
+  },
   "keywords": [
     "scripts",
     "fzf",
