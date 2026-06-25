@@ -2,8 +2,11 @@
   "name": "bun-scripts",
   "type": "module",
   "private": true,
+  "bin": {
+    "check-env": "src/check-env/index.ts",
+    "r": "src/run-package-scripts/index.ts"
+  },
   "scripts": {
-    "install:tools": "bun run scripts/install.ts",
     "lint": "eslint src/**/*.ts scripts/**/*.ts",
     "lint:fix": "eslint src/**/*.ts scripts/**/*.ts --fix",
     "format": "prettier --write .",
