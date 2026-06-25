@@ -1,5 +1,11 @@
 # @tigerbook/check-env
 
+## 0.2.1
+
+### Patch Changes
+
+- be666d7: chore: add homepage field pointing to package README on GitHub
+
 ## 0.2.0
 
 ### Minor Changes

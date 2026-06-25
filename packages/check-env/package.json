@@ -1,6 +1,6 @@
 {
   "name": "@tigerbook/check-env",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Validates required environment variables declared in .env.example",
   "license": "MIT",
