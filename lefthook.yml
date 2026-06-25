@@ -1,7 +1,7 @@
 pre-commit:
-  piped: true
   commands:
     no-commit-to-main:
+      priority: 1
       run: |
         branch=$(git symbolic-ref --short HEAD 2>/dev/null)
         if [ "$branch" = "main" ]; then
@@ -9,13 +9,17 @@ pre-commit:
           exit 1
         fi
     lint:
+      priority: 2
       glob: "**/*.ts"
       run: pnpm eslint --fix {staged_files}
       stage_fixed: true
     format:
+      priority: 2
       run: pnpm prettier --write {staged_files}
       stage_fixed: true
     typecheck:
+      priority: 3
       run: pnpm typecheck
     test:
+      priority: 3
       run: pnpm test
