@@ -22,6 +22,8 @@ export interface ResolvedVar extends ExampleVar {
   source: string | null;
   /** Actual value if configured, otherwise null */
   value: string | null;
+  /** False when value is set and fails the declared typeHint check. True when unset or no hint. */
+  typeValid: boolean;
 }
 
 export interface ResolvedSection {

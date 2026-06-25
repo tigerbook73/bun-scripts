@@ -8,26 +8,6 @@ function truncate(s: string, max: number): string {
   return s.length <= max ? s : s.slice(0, max - 1) + "…";
 }
 
-function validateTypeHint(value: string, hint: string): boolean {
-  const v = value.trim();
-  switch (hint) {
-    case "number":
-      return v !== "" && !isNaN(Number(v));
-    case "boolean":
-      return ["true", "false", "yes", "no", "0", "1"].includes(v.toLowerCase());
-    case "url": {
-      try {
-        new URL(v);
-        return true;
-      } catch {
-        return false;
-      }
-    }
-    default:
-      return true;
-  }
-}
-
 export class EnvChecker {
   private readonly sections: ResolvedSection[];
   private readonly color: ColorPalette;
@@ -44,9 +24,7 @@ export class EnvChecker {
   }
 
   private typeErrorVars(): ResolvedVar[] {
-    return this.sections
-      .flatMap((s) => s.vars)
-      .filter((v) => v.value !== null && v.typeHint !== null && !validateTypeHint(v.value, v.typeHint));
+    return this.sections.flatMap((s) => s.vars).filter((v) => !v.typeValid);
   }
 
   hasMissing(): boolean {
@@ -148,7 +126,7 @@ export class EnvChecker {
   private statusChar(v: ResolvedVar): string {
     const { color } = this;
     if (v.source !== null) {
-      if (v.typeHint !== null && v.value !== null && !validateTypeHint(v.value, v.typeHint)) return color.warn("⚠");
+      if (!v.typeValid) return color.warn("⚠");
       return color.ok("✓");
     }
     if (!v.required || v.defaultValue !== null) return color.muted("—");

@@ -339,6 +339,41 @@ describe("resolveVars", () => {
     );
     expect(hasMissing).toBe(false);
   });
+
+  test("typeValid is true when var is not set (no value to validate)", () => {
+    const sections = resolveVars(parseEnvExample("PORT=<number>\n"), []);
+    expect(sections[0]!.vars[0]!.typeValid).toBe(true);
+  });
+
+  test("typeValid is true when no typeHint declared", () => {
+    scaffold(tmpDir, { ".env": "KEY=anything\n" });
+    const sections = resolveVars(parseEnvExample("KEY=\n"), [".env"]);
+    expect(sections[0]!.vars[0]!.typeValid).toBe(true);
+  });
+
+  test("typeValid is true for a value matching its typeHint", () => {
+    scaffold(tmpDir, { ".env": "PORT=8080\n" });
+    const sections = resolveVars(parseEnvExample("PORT=<number>\n"), [".env"]);
+    expect(sections[0]!.vars[0]!.typeValid).toBe(true);
+  });
+
+  test("typeValid is false for a value failing its typeHint", () => {
+    scaffold(tmpDir, { ".env": "PORT=not-a-number\n" });
+    const sections = resolveVars(parseEnvExample("PORT=<number>\n"), [".env"]);
+    expect(sections[0]!.vars[0]!.typeValid).toBe(false);
+  });
+
+  test("typeValid is false for invalid boolean", () => {
+    scaffold(tmpDir, { ".env": "ENABLE=maybe\n" });
+    const sections = resolveVars(parseEnvExample("ENABLE=<boolean>\n"), [".env"]);
+    expect(sections[0]!.vars[0]!.typeValid).toBe(false);
+  });
+
+  test("typeValid is false for invalid url", () => {
+    scaffold(tmpDir, { ".env": "API_URL=not-a-url\n" });
+    const sections = resolveVars(parseEnvExample("API_URL=<url>\n"), [".env"]);
+    expect(sections[0]!.vars[0]!.typeValid).toBe(false);
+  });
 });
 
 // ─── buildEnvContent ──────────────────────────────────────────────────────────

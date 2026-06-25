@@ -28,6 +28,15 @@ export { buildEnvContent } from "./writer";
 export { buildGetOutput, buildJsonOutput } from "./getter";
 export type { ExampleVar, ExampleSection, ResolvedVar, ResolvedSection, Env } from "./types";
 
+// ─── CLI mode types ───────────────────────────────────────────────────────────
+
+type CheckDisplay = "verbose" | "quiet" | "silent" | "mismatch";
+
+type CliMode =
+  | { kind: "check"; display: CheckDisplay; noMask: boolean }
+  | { kind: "get"; keys: string[]; json: boolean }
+  | { kind: "dump"; toStdout: boolean; outputFile: string | null };
+
 // ─── Env file chains ─────────────────────────────────────────────────────────
 
 function getEnvFiles(env: string): string[] {
@@ -76,39 +85,41 @@ if (import.meta.main) {
     process.exit(0);
   }
 
-  // ── Option conflict checks ────────────────────────────────────────────────
+  // ── Parse flags into a typed mode (validates conflicts in one place) ───────
 
-  const CHECK_DISPLAY_FLAGS = ["quiet", "silent", "mismatch"] as const;
-  const activeCheckModes = CHECK_DISPLAY_FLAGS.filter((f) => values[f]);
+  const mode = ((): CliMode => {
+    const checkFlags = ["quiet", "silent", "mismatch"] as const;
+    const activeCheck = checkFlags.filter((f) => values[f]);
+    const isOutputMode = values.get || values.dump || values.output !== undefined;
 
-  if (activeCheckModes.length > 1) {
-    console.error(`Error: --${activeCheckModes[0]} and --${activeCheckModes[1]} cannot be combined`);
-    process.exit(1);
-  }
+    if (activeCheck.length > 1) {
+      console.error(`Error: --${activeCheck[0]} and --${activeCheck[1]} cannot be combined`);
+      process.exit(1);
+    }
+    if (activeCheck.length > 0 && isOutputMode) {
+      const outputFlag = values.get ? "--get" : values.dump ? "--dump" : "--output";
+      console.error(`Error: --${activeCheck[0]} cannot be combined with ${outputFlag}`);
+      process.exit(1);
+    }
+    if (values.get && (values.dump || values.output !== undefined)) {
+      console.error(`Error: --get cannot be combined with ${values.dump ? "--dump" : "--output"}`);
+      process.exit(1);
+    }
+    if (values.json && !values.get) {
+      console.error("Error: --json requires --get / -g");
+      process.exit(1);
+    }
+    if (positionals.length > 0 && !values.get) {
+      console.error("Error: positional arguments require --get / -g");
+      process.exit(1);
+    }
 
-  const isOutputMode = values.get || values.dump || values.output !== undefined;
-
-  if (activeCheckModes.length > 0 && isOutputMode) {
-    const outputFlag = values.get ? "--get" : values.dump ? "--dump" : "--output";
-    console.error(`Error: --${activeCheckModes[0]} cannot be combined with ${outputFlag}`);
-    process.exit(1);
-  }
-
-  if (values.get && (values.dump || values.output !== undefined)) {
-    const other = values.dump ? "--dump" : "--output";
-    console.error(`Error: --get cannot be combined with ${other}`);
-    process.exit(1);
-  }
-
-  if (values.json && !values.get) {
-    console.error(`Error: --json requires --get / -g`);
-    process.exit(1);
-  }
-
-  if (positionals.length > 0 && !values.get) {
-    console.error(`Error: positional arguments require --get / -g`);
-    process.exit(1);
-  }
+    if (values.get) return { kind: "get", keys: positionals, json: values.json ?? false };
+    if (values.dump || values.output !== undefined) {
+      return { kind: "dump", toStdout: values.dump ?? false, outputFile: values.output ?? null };
+    }
+    return { kind: "check", display: activeCheck[0] ?? "verbose", noMask: values["no-mask"] ?? false };
+  })();
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -125,59 +136,36 @@ if (import.meta.main) {
     process.exit(1);
   }
 
-  const env = values.env ?? "dev";
-  const exampleContent = readFileSync(examplePath, "utf8");
-  const sections = resolveVars(parseEnvExample(exampleContent), getEnvFiles(env));
+  const sections = resolveVars(
+    parseEnvExample(readFileSync(examplePath, "utf8")),
+    getEnvFiles(values.env ?? "dev"),
+  );
   const checker = new EnvChecker({ sections, color });
-  const noMask = values["no-mask"] ?? false;
 
-  // Output modes — run check gate first
-  if (values.get || values.dump || values.output !== undefined) {
-    if (checker.hasMissing()) {
-      checker.printSilent();
-      process.exit(1);
-    }
-    if (checker.hasTypeErrors()) {
-      checker.printMismatchOnly();
-      process.exit(1);
-    }
-
-    if (values.get) {
-      const out = values.json
-        ? buildJsonOutput(sections, positionals)
-        : buildGetOutput(sections, positionals);
+  switch (mode.kind) {
+    case "get": {
+      if (checker.hasMissing()) { checker.printSilent(); process.exit(1); }
+      if (checker.hasTypeErrors()) { checker.printMismatchOnly(); process.exit(1); }
+      const out = mode.json ? buildJsonOutput(sections, mode.keys) : buildGetOutput(sections, mode.keys);
       if (out) console.log(out);
       process.exit(0);
     }
-
-    if (values.dump || values.output !== undefined) {
+    case "dump": {
+      if (checker.hasMissing()) { checker.printSilent(); process.exit(1); }
+      if (checker.hasTypeErrors()) { checker.printMismatchOnly(); process.exit(1); }
       const content = buildEnvContent(sections);
-      if (values.dump) {
-        process.stdout.write(content);
-      }
-      if (values.output !== undefined) {
-        await Bun.write(values.output, content);
-      }
+      if (mode.toStdout) process.stdout.write(content);
+      if (mode.outputFile !== null) await Bun.write(mode.outputFile, content);
       process.exit(0);
     }
+    case "check": {
+      switch (mode.display) {
+        case "verbose": checker.printVerbose({ noMask: mode.noMask }); break;
+        case "quiet":   checker.printQuiet(); break;
+        case "silent":  checker.printSilent(); break;
+        case "mismatch": checker.printMismatchOnly(); break;
+      }
+      process.exit(checker.hasErrors() ? 1 : 0);
+    }
   }
-
-  // Check modes
-  if (values.silent) {
-    checker.printSilent();
-    process.exit(checker.hasErrors() ? 1 : 0);
-  }
-
-  if (values.mismatch) {
-    checker.printMismatchOnly();
-    process.exit(checker.hasErrors() ? 1 : 0);
-  }
-
-  if (values.quiet) {
-    checker.printQuiet();
-    process.exit(checker.hasErrors() ? 1 : 0);
-  }
-
-  checker.printVerbose({ noMask });
-  process.exit(checker.hasErrors() ? 1 : 0);
 }
