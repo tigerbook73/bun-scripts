@@ -1,5 +1,11 @@
 # @tigerbook/run-scripts
 
+## 0.2.2
+
+### Patch Changes
+
+- 2e25d96: chore: add homepage field pointing to package README on GitHub
+
 ## 0.2.1
 
 ### Patch Changes
