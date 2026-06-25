@@ -29,9 +29,7 @@ export class EnvChecker {
       for (const v of s.vars)
         if (v.name.length > maxLen) maxLen = v.name.length;
 
-    for (let i = 0; i < sections.length; i++) {
-      const section = sections[i]!;
-
+    for (const [i, section] of sections.entries()) {
       if (section.title) {
         if (i > 0) process.stdout.write("\n");
         for (const line of section.title.split("\n")) {

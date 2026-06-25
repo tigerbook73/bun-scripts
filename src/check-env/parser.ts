@@ -34,7 +34,7 @@ export function stripInlineComment(raw: string): string {
   // Handle quoted values first — don't strip # inside quotes
   const trimmed = raw.trim();
   if (trimmed.startsWith('"') || trimmed.startsWith("'")) {
-    const quote = trimmed[0]!;
+    const quote = trimmed.charAt(0);
     const closing = trimmed.indexOf(quote, 1);
     if (closing !== -1) return trimmed.slice(1, closing);
     return trimmed.slice(1);
@@ -93,7 +93,7 @@ export function parseEnvExample(content: string): ExampleSection[] {
     for (const line of varLines) {
       let match = ACTIVE_KEY_RE.exec(line);
       if (match) {
-        const name = match[1]!;
+        const name = match[1] ?? "";
         const rawValue = match[2] ?? "";
         if (seenNames.has(name)) {
           console.error(`Warning: duplicate key "${name}" in .env.example — skipping duplicate`);
@@ -111,7 +111,7 @@ export function parseEnvExample(content: string): ExampleSection[] {
       }
       match = OPTIONAL_KEY_RE.exec(line);
       if (match) {
-        const name = match[1]!;
+        const name = match[1] ?? "";
         const rawValue = match[2] ?? "";
         const exampleValue = stripInlineComment(rawValue) || null;
         if (seenNames.has(name)) continue; // commented alternative — silently skip

@@ -46,7 +46,7 @@ if (import.meta.main) {
   let noColor = false;
 
   for (let i = 0; i < args.length; i++) {
-    const arg = args[i]!;
+    const arg = args[i] ?? "";
     if (arg === "-h" || arg === "--help") {
       printHelp();
       process.exit(0);
