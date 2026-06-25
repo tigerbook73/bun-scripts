@@ -16,6 +16,7 @@ export function maskValue(value: string): string {
 const ACTIVE_KEY_RE = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/;
 const OPTIONAL_KEY_RE = /^#\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)$/;
 const DEFAULT_VAL_RE = /\bdefault:\s*(\S+)/;
+const TYPE_HINT_VALUE_RE = /^<(\w+)>$/;
 
 /**
  * Extracts `default: X` from the inline comment portion of a raw value string.
@@ -27,6 +28,28 @@ function extractDefaultValue(raw: string): string | null {
   const comment = raw.slice(hashIdx + 1);
   const match = DEFAULT_VAL_RE.exec(comment);
   return match ? (match[1] ?? null) : null;
+}
+
+/**
+ * Extracts the raw inline comment text (without leading `#` and space).
+ * e.g. `30    # number, unit: seconds` → `"number, unit: seconds"`
+ */
+function extractInlineComment(raw: string): string | null {
+  const hashIdx = raw.indexOf("#");
+  if (hashIdx === -1) return null;
+  return raw.slice(hashIdx + 1).trim() || null;
+}
+
+/**
+ * Extracts type hint from the value position, e.g. `<number>` → `"number"`.
+ * Returns null for `<secret>` (handled separately) and non-hint values.
+ */
+function extractTypeHint(rawValue: string): string | null {
+  const value = stripInlineComment(rawValue).trim();
+  const match = TYPE_HINT_VALUE_RE.exec(value);
+  if (!match) return null;
+  const hint = (match[1] ?? "").toLowerCase();
+  return hint === "secret" ? null : hint;
 }
 
 /** Strips inline comment and surrounding whitespace from a raw value string. */
@@ -106,6 +129,8 @@ export function parseEnvExample(content: string): ExampleSection[] {
           exampleValue: null,
           defaultValue: extractDefaultValue(rawValue),
           isSecret: isSecret(name, stripInlineComment(rawValue)),
+          inlineComment: extractInlineComment(rawValue),
+          typeHint: extractTypeHint(rawValue),
         });
         continue;
       }
@@ -122,6 +147,8 @@ export function parseEnvExample(content: string): ExampleSection[] {
           exampleValue,
           defaultValue: extractDefaultValue(rawValue),
           isSecret: isSecret(name, exampleValue),
+          inlineComment: extractInlineComment(rawValue),
+          typeHint: extractTypeHint(rawValue),
         });
       }
     }

@@ -1,14 +1,39 @@
 import type { ResolvedSection, ResolvedVar } from "./types";
 import { ColorPalette } from "./color";
-import { resolveVars } from "./resolver";
-import { parseEnvExample } from "./parser";
+import { maskValue } from "./parser";
+
+const VALUE_COL_MAX = 36;
+
+function truncate(s: string, max: number): string {
+  return s.length <= max ? s : s.slice(0, max - 1) + "…";
+}
+
+function validateTypeHint(value: string, hint: string): boolean {
+  const v = value.trim();
+  switch (hint) {
+    case "number":
+      return v !== "" && !isNaN(Number(v));
+    case "boolean":
+      return ["true", "false", "yes", "no", "0", "1"].includes(v.toLowerCase());
+    case "url": {
+      try {
+        new URL(v);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    default:
+      return true;
+  }
+}
 
 export class EnvChecker {
   private readonly sections: ResolvedSection[];
   private readonly color: ColorPalette;
 
-  constructor(options: { exampleContent: string; envFiles: string[]; color: ColorPalette }) {
-    this.sections = resolveVars(parseEnvExample(options.exampleContent), options.envFiles);
+  constructor(options: { sections: ResolvedSection[]; color: ColorPalette }) {
+    this.sections = options.sections;
     this.color = options.color;
   }
 
@@ -18,16 +43,40 @@ export class EnvChecker {
       .filter((v) => v.required && v.source === null && v.defaultValue === null);
   }
 
+  private typeErrorVars(): ResolvedVar[] {
+    return this.sections
+      .flatMap((s) => s.vars)
+      .filter((v) => v.value !== null && v.typeHint !== null && !validateTypeHint(v.value, v.typeHint));
+  }
+
   hasMissing(): boolean {
     return this.missingVars().length > 0;
   }
 
-  printVerbose(): void {
+  hasTypeErrors(): boolean {
+    return this.typeErrorVars().length > 0;
+  }
+
+  /** Returns true if any required vars are missing OR any values fail type validation. */
+  hasErrors(): boolean {
+    return this.hasMissing() || this.hasTypeErrors();
+  }
+
+  printVerbose({ noMask = false }: { noMask?: boolean } = {}): void {
     const { sections, color } = this;
-    let maxLen = 0;
-    for (const s of sections)
-      for (const v of s.vars)
-        if (v.name.length > maxLen) maxLen = v.name.length;
+
+    const displayCache = new Map<ResolvedVar, string>();
+    let maxKeyLen = 0;
+    let maxValLen = 0;
+    for (const s of sections) {
+      for (const v of s.vars) {
+        if (v.name.length > maxKeyLen) maxKeyLen = v.name.length;
+        const vd = this.valueDisplay(v, noMask);
+        displayCache.set(v, vd);
+        if (vd.length > maxValLen) maxValLen = vd.length;
+      }
+    }
+    maxValLen = Math.min(maxValLen, VALUE_COL_MAX);
 
     for (const [i, section] of sections.entries()) {
       if (section.title) {
@@ -40,7 +89,32 @@ export class EnvChecker {
       }
 
       for (const v of section.vars) {
-        console.log(`${this.statusChar(v)}  ${v.name.padEnd(maxLen)}  ${this.sourceText(v)}`);
+        const status = this.statusChar(v);
+        const name = v.name.padEnd(maxKeyLen);
+        const rawVal = displayCache.get(v)!;
+        const truncatedRaw = truncate(rawVal, maxValLen);
+        const paddedRaw = truncatedRaw.padEnd(maxValLen);
+        const coloredVal = v.value !== null ? paddedRaw : color.muted(paddedRaw);
+        const src = v.source !== null ? color.muted(`# ${v.source}`) : "";
+        console.log(`${status}  ${name}  ${coloredVal}  ${src}`.trimEnd());
+      }
+    }
+
+    const typeErrors = this.typeErrorVars();
+    if (typeErrors.length > 0) {
+      console.log("");
+      for (const v of typeErrors) {
+        console.log(color.warn(`⚠  ${v.name}: "${v.value}" is not a valid <${v.typeHint}>`));
+      }
+    }
+  }
+
+  printQuiet(): void {
+    const { sections } = this;
+    for (const [i, section] of sections.entries()) {
+      if (section.title && i > 0) process.stdout.write("\n");
+      for (const v of section.vars) {
+        console.log(`${this.statusChar(v)}  ${v.name}`);
       }
     }
   }
@@ -50,30 +124,43 @@ export class EnvChecker {
     for (const v of this.missingVars()) {
       console.log(`${color.error("✗")}  ${v.name}`);
     }
+    for (const v of this.typeErrorVars()) {
+      console.log(`${color.warn("⚠")}  ${v.name}`);
+    }
   }
 
   printSilent(): void {
-    const missing = this.missingVars().map((v) => v.name);
+    const groups: [string[], string][] = [
+      [this.missingVars().map((v) => v.name), "The following required variables are not configured:"],
+      [this.typeErrorVars().map((v) => v.name), "The following variables fail type validation:"],
+    ];
 
-    if (missing.length === 0) return;
+    if (groups.every(([names]) => names.length === 0)) return;
 
-    console.log("The following required variables are not configured:");
-    for (const name of missing) {
-      console.log(`  ${name}`);
+    for (const [names, header] of groups) {
+      if (names.length > 0) {
+        console.log(header);
+        for (const name of names) console.log(`  ${name}`);
+      }
     }
   }
 
   private statusChar(v: ResolvedVar): string {
     const { color } = this;
-    if (v.source !== null) return color.ok("✓");
+    if (v.source !== null) {
+      if (v.typeHint !== null && v.value !== null && !validateTypeHint(v.value, v.typeHint)) return color.warn("⚠");
+      return color.ok("✓");
+    }
     if (!v.required || v.defaultValue !== null) return color.muted("—");
     return color.error("✗");
   }
 
-  private sourceText(v: ResolvedVar): string {
-    if (v.source !== null) return v.source;
+  private valueDisplay(v: ResolvedVar, noMask: boolean): string {
+    if (v.value !== null) {
+      return v.isSecret && !noMask ? maskValue(v.value) : v.value;
+    }
     if (v.defaultValue !== null) return `(default: ${v.defaultValue})`;
-    if (!v.required) return "(optional, not set)";
+    if (!v.required) return "(optional)";
     return "(not set)";
   }
 }

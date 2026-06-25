@@ -42,4 +42,9 @@ export class ColorPalette {
   typeHint(t: string): string {
     return this.c.cyan(t);
   }
+
+  /** Type validation failure — ⚠ */
+  warn(t: string): string {
+    return this.c.yellow(t);
+  }
 }

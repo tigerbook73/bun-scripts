@@ -99,27 +99,59 @@ export function printExplain(color: ColorPalette): void {
 
 export function printHelp(): void {
   console.log(`\
-Usage: check-env [--env dev|prod] [flags]
+Usage: check-env [options] [mode] [KEYS...]
 
-Validates .env.example variables are configured in the current environment.
-Reads .env.example from the current directory as the source of truth.
+Validates that all required environment variables declared in .env.example
+are configured in the current environment. Type hints are validated by default.
 
-Options:
-  -h, --help         Show this help message
-  --env dev|prod     Environment to check (default: dev)
-  --no-color         Disable color output
-  --silent           Exit 1 with missing list if any required vars unset; exit 0 otherwise
-  --mismatch-only    List only required-but-unset variables
-  --explain          Print .env.example format reference template
+Global options:
+  -h, --help            Show this help message
+  -e, --env <name>      Environment to check (default: dev)
+                        Built-in: dev, prod. Custom names infer their own file chain.
+  -E, --example <path>  Path to .env.example (default: .env.example)
+  --no-color            Disable color output
+  --explain             Print .env.example format reference template
 
-Environment priority (dev):
-  .env → .env.local → .env.development → .env.development.local
+Check modes (default: verbose; mutually exclusive):
+  -q, --quiet           Compact — status symbol and key name only
+  -s, --silent          No output on success; list errors on failure
+  -m, --mismatch        List only missing required vars and type errors
 
-Environment priority (prod):
-  .env → .env.production → .env.production.local
+Output modes (run check first; exit 1 on errors; mutually exclusive with check modes):
+  -g, --get [KEYS...]   Print KEY=VALUE lines for configured vars (all if no KEYS given)
+      --json            Output JSON instead of KEY=VALUE (requires --get)
+  -D, --dump            Print full .env to stdout (mirrors .env.example structure)
+  -o, --output <file>   Write full .env to file
+                        --dump and --output can be combined to write to both destinations.
+
+Display modifier:
+  --no-mask             Show secret values unmasked in check display modes
+
+Environment file priority:
+  dev:      .env → .env.local → .env.development → .env.development.local
+  prod:     .env → .env.production → .env.production.local
+  <custom>: .env → .env.<name> → .env.<name>.local
+
+Examples:
+  # Checking environment
+  check-env                              verbose check for dev
+  check-env -e prod -s                   silent CI check for prod
+  check-env -q                           compact: one line per variable
+  check-env --no-mask                    show actual secret values
+
+  # Getting values
+  check-env -g                           all configured vars (KEY=VALUE)
+  env \$(check-env -g) node app.js        inject all vars into a subprocess
+  check-env -g DB_HOST DB_PORT           specific keys only
+  check-env -g --json                    JSON format for scripting
+
+  # Generating .env files
+  check-env --dump                       full .env to stdout
+  check-env -o .env.development.full     write snapshot to file
+  check-env --dump -o .env.full          stdout and file simultaneously
 
 Exit codes:
-  0  All required variables are configured (or --explain used)
-  1  One or more required variables are missing, or .env.example not found
+  0  All checks pass (or --explain / --help used)
+  1  Missing required vars, type errors, or .env.example not found
 `);
 }

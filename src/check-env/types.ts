@@ -6,6 +6,10 @@ export interface ExampleVar {
   /** Non-null when `default: X` appears in the inline comment — the app's built-in default. */
   defaultValue: string | null;
   isSecret: boolean;
+  /** Full inline comment text (without leading # and space), e.g. "number, unit: seconds, default: 30" */
+  inlineComment: string | null;
+  /** Parsed type hint from <type> marker, e.g. "number", "boolean", "url". Null if none or if <secret>. */
+  typeHint: string | null;
 }
 
 export interface ExampleSection {
@@ -25,4 +29,5 @@ export interface ResolvedSection {
   vars: ResolvedVar[];
 }
 
-export type Env = "dev" | "prod";
+/** Environment name: "dev" and "prod" have predefined file chains; any other name is inferred. */
+export type Env = string;

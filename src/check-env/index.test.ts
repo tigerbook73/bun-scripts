@@ -10,6 +10,9 @@ import {
   resolveVars,
   isSecret,
   maskValue,
+  buildEnvContent,
+  buildGetOutput,
+  buildJsonOutput,
 } from "./index";
 
 function scaffold(dir: string, files: Record<string, string>): void {
@@ -227,6 +230,46 @@ describe("parseEnvExample", () => {
     const sections = parseEnvExample("# LOG_LEVEL=info    # default: info\n");
     expect(sections[0]!.vars[0]).toMatchObject({ required: false, defaultValue: "info" });
   });
+
+  test("captures inlineComment text for required var", () => {
+    const sections = parseEnvExample("TIMEOUT=30    # number, unit: seconds, default: 30\n");
+    expect(sections[0]!.vars[0]!.inlineComment).toBe("number, unit: seconds, default: 30");
+  });
+
+  test("captures inlineComment text for optional var", () => {
+    const sections = parseEnvExample("# PORT=8080    # number\n");
+    expect(sections[0]!.vars[0]!.inlineComment).toBe("number");
+  });
+
+  test("inlineComment is null when no inline comment", () => {
+    const sections = parseEnvExample("DB_HOST=\n");
+    expect(sections[0]!.vars[0]!.inlineComment).toBeNull();
+  });
+
+  test("extracts typeHint from <number> marker", () => {
+    const sections = parseEnvExample("PORT=<number>\n");
+    expect(sections[0]!.vars[0]!.typeHint).toBe("number");
+  });
+
+  test("extracts typeHint from <url> marker", () => {
+    const sections = parseEnvExample("API_URL=<url>\n");
+    expect(sections[0]!.vars[0]!.typeHint).toBe("url");
+  });
+
+  test("extracts typeHint from <boolean> marker", () => {
+    const sections = parseEnvExample("ENABLE=<boolean>\n");
+    expect(sections[0]!.vars[0]!.typeHint).toBe("boolean");
+  });
+
+  test("typeHint is null for <secret>", () => {
+    const sections = parseEnvExample("STRIPE_SK=<secret>\n");
+    expect(sections[0]!.vars[0]!.typeHint).toBeNull();
+  });
+
+  test("typeHint is null for plain values", () => {
+    const sections = parseEnvExample("DB_PORT=5432\n");
+    expect(sections[0]!.vars[0]!.typeHint).toBeNull();
+  });
 });
 
 // ─── resolveVars ──────────────────────────────────────────────────────────────
@@ -295,5 +338,102 @@ describe("resolveVars", () => {
       s.vars.some((vv) => vv.required && vv.source === null && vv.defaultValue === null),
     );
     expect(hasMissing).toBe(false);
+  });
+});
+
+// ─── buildEnvContent ──────────────────────────────────────────────────────────
+
+describe("buildEnvContent", () => {
+  test("outputs configured required var with actual value", () => {
+    scaffold(tmpDir, { ".env": "DB_HOST=localhost\n" });
+    const sections = resolveVars(parseEnvExample("DB_HOST=\n"), [".env"]);
+    expect(buildEnvContent(sections)).toContain("DB_HOST=localhost");
+  });
+
+  test("outputs unconfigured required var as empty placeholder", () => {
+    const sections = resolveVars(parseEnvExample("DB_HOST=\n"), []);
+    expect(buildEnvContent(sections)).toContain("DB_HOST=");
+  });
+
+  test("outputs configured optional var as uncommented", () => {
+    scaffold(tmpDir, { ".env": "OPT=yes\n" });
+    const sections = resolveVars(parseEnvExample("# OPT=default\n"), [".env"]);
+    expect(buildEnvContent(sections)).toContain("OPT=yes");
+    expect(buildEnvContent(sections)).not.toContain("# OPT=");
+  });
+
+  test("keeps unconfigured optional var commented with example value", () => {
+    const sections = resolveVars(parseEnvExample("# OPT=default\n"), []);
+    expect(buildEnvContent(sections)).toContain("# OPT=default");
+  });
+
+  test("preserves inline comments", () => {
+    scaffold(tmpDir, { ".env": "PORT=9000\n" });
+    const sections = resolveVars(parseEnvExample("PORT=<number>  # number, unit: port\n"), [".env"]);
+    const content = buildEnvContent(sections);
+    expect(content).toContain("PORT=9000");
+    expect(content).toContain("# number, unit: port");
+  });
+
+  test("preserves section title", () => {
+    scaffold(tmpDir, { ".env": "DB_HOST=localhost\n" });
+    const sections = resolveVars(parseEnvExample("# Database\nDB_HOST=\n"), [".env"]);
+    expect(buildEnvContent(sections)).toContain("# Database");
+  });
+
+  test("separates sections with blank lines", () => {
+    scaffold(tmpDir, { ".env": "A=1\nB=2\n" });
+    const sections = resolveVars(parseEnvExample("A=\n\nB=\n"), [".env"]);
+    expect(buildEnvContent(sections)).toMatch(/A=1\n\nB=2/);
+  });
+});
+
+// ─── buildGetOutput / buildJsonOutput ─────────────────────────────────────────
+
+describe("buildGetOutput", () => {
+  test("outputs all configured vars when no keys specified", () => {
+    scaffold(tmpDir, { ".env": "A=1\nB=2\n" });
+    const sections = resolveVars(parseEnvExample("A=\nB=\n"), [".env"]);
+    const out = buildGetOutput(sections, []);
+    expect(out).toContain("A=1");
+    expect(out).toContain("B=2");
+  });
+
+  test("filters to specified keys", () => {
+    scaffold(tmpDir, { ".env": "A=1\nB=2\n" });
+    const sections = resolveVars(parseEnvExample("A=\nB=\n"), [".env"]);
+    const out = buildGetOutput(sections, ["A"]);
+    expect(out).toContain("A=1");
+    expect(out).not.toContain("B=");
+  });
+
+  test("skips unset vars even when key is specified", () => {
+    const sections = resolveVars(parseEnvExample("A=\n# OPT=x\n"), []);
+    const out = buildGetOutput(sections, ["OPT"]);
+    expect(out).toBe("");
+  });
+
+  test("uses actual values without masking for secrets", () => {
+    scaffold(tmpDir, { ".env": "API_KEY=secret123\n" });
+    const sections = resolveVars(parseEnvExample("API_KEY=\n"), [".env"]);
+    const out = buildGetOutput(sections, []);
+    expect(out).toContain("API_KEY=secret123");
+  });
+});
+
+describe("buildJsonOutput", () => {
+  test("outputs valid JSON with all configured vars", () => {
+    scaffold(tmpDir, { ".env": "A=1\nB=2\n" });
+    const sections = resolveVars(parseEnvExample("A=\nB=\n"), [".env"]);
+    const parsed = JSON.parse(buildJsonOutput(sections, []));
+    expect(parsed).toMatchObject({ A: "1", B: "2" });
+  });
+
+  test("filters to specified keys in JSON output", () => {
+    scaffold(tmpDir, { ".env": "A=1\nB=2\n" });
+    const sections = resolveVars(parseEnvExample("A=\nB=\n"), [".env"]);
+    const parsed = JSON.parse(buildJsonOutput(sections, ["A"]));
+    expect(parsed).toMatchObject({ A: "1" });
+    expect(parsed.B).toBeUndefined();
   });
 });
