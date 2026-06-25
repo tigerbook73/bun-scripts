@@ -5,6 +5,7 @@
   "description": "Validates required environment variables declared in .env.example",
   "license": "MIT",
   "author": "tigerbook",
+  "homepage": "https://github.com/tigerbook73/bun-scripts/tree/main/packages/check-env#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/tigerbook73/bun-scripts",
