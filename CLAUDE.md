@@ -64,6 +64,18 @@ test("example", () => {
 });
 ```
 
+## Changesets
+
+Before committing changes to any package under `packages/`, check whether the change affects published behavior (new features, bug fixes, CLI changes, dependency updates, or documentation visible on npm). If yes, run:
+
+```bash
+pnpm changeset
+```
+
+and include the generated `.changeset/*.md` file in the same commit.
+
+Skip changeset for: CI config, tests, root-level tooling, `.gitignore`, and other files that don't affect the published package.
+
 ## Keeping Docs and Tests in Sync
 
 When a CLI tool's commands, flags, arguments, or behavior change, always update **all** of the following together:

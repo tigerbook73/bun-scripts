@@ -11,9 +11,11 @@
     "typecheck": "pnpm -r typecheck",
     "build": "pnpm -r build",
     "bun-link": "pnpm -r exec bun link",
+    "changeset": "changeset",
     "verify": "pnpm -r --parallel lint && pnpm format&& pnpm -r --parallel typecheck && pnpm -r --parallel test"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@types/bun": "latest",
     "@typescript-eslint/eslint-plugin": "^8.62.0",
     "@typescript-eslint/parser": "^8.62.0",
