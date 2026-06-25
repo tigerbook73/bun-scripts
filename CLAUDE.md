@@ -38,3 +38,11 @@ test("example", () => {
   expect(1).toBe(1);
 });
 ```
+
+## Keeping Docs and Tests in Sync
+
+When a CLI tool's commands, flags, arguments, or behavior change, always update **all** of the following together:
+
+- **`printHelp()` / help text** — flag names, descriptions, defaults, examples
+- **`src/<tool-name>/README.md`** — usage examples and options table
+- **Tests** — any test that asserts on output, flags, or behavior affected by the change

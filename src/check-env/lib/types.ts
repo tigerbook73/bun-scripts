@@ -40,4 +40,4 @@ export interface ResolvedSection {
 /** Environment name: "dev" and "prod" have predefined file chains; any other name is inferred. */
 export type Env = string;
 
-export type CheckDisplay = "verbose" | "quiet" | "silent" | "mismatch";
+export type CheckDisplay = "standard" | "verbose" | "quiet" | "silent" | "mismatch";

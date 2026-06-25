@@ -5,7 +5,8 @@ Validates that all required environment variables declared in `.env.example` are
 ## Usage
 
 ```bash
-check-env                        # verbose check (dev environment)
+check-env                        # standard check (dev environment)
+check-env -v                     # verbose: adds section titles and dividers
 check-env -e prod                # check production environment
 check-env -e staging             # check a custom environment
 check-env -q                     # quiet: symbol + key name only
@@ -13,20 +14,21 @@ check-env -s                     # silent: no output on success
 check-env -m                     # list only missing/invalid vars
 ```
 
-### Output modes
-
-All output modes run the check first and exit 1 if any required vars are missing or type-invalid.
+### Subcommands
 
 ```bash
-# Get values (KEY=VALUE lines, actual values, no masking)
-check-env -g                     # all configured vars
-check-env -g DB_HOST DB_PORT     # specific keys
-check-env -g --json              # JSON format
-env $(check-env -g) node app.js  # inject into subprocess environment
+# Get values (KEY=VALUE lines, actual values)
+check-env get                    # all configured vars
+check-env get DB_HOST DB_PORT    # specific keys
+check-env get --json             # JSON format
+env $(check-env get) node app.js # inject into subprocess environment
 
 # Dump full .env file (mirrors .env.example structure with actual values)
-check-env --dump                 # to stdout
-check-env -o .env.production.local.full  # to file
+check-env dump                   # to stdout
+check-env dump -o .env.snapshot  # to file
+
+# Show .env.example format reference
+check-env explain
 ```
 
 ## `.env.example` format
@@ -47,15 +49,15 @@ TIMEOUT=30  # number, default: 30  # has app-level default — not reported as m
 # WEBHOOK_URL=<url>
 ```
 
-Run `check-env --explain` for a full annotated format reference.
+Run `check-env explain` for a full annotated format reference.
 
 ## Environment file priority
 
-| Environment     | Files loaded (low → high priority)                                    |
-| --------------- | --------------------------------------------------------------------- |
-| `dev` (default) | `.env` → `.env.local` → `.env.development` → `.env.development.local` |
-| `prod`          | `.env` → `.env.production` → `.env.production.local`                  |
-| `<custom>`      | `.env` → `.env.<name>` → `.env.<name>.local`                          |
+| Environment     | Files loaded (low → high priority)                                     |
+| --------------- | ---------------------------------------------------------------------- |
+| `dev` (default) | `.env` → `.env.local` → `.env.development` → `.env.development.local`  |
+| `prod`          | `.env` → `.env.production` → `.env.production.local`                   |
+| `<custom>`      | `.env` → `.env.<name>` → `.env.<name>.local`                           |
 
 ## Options
 
@@ -65,19 +67,19 @@ Global:
   -e, --env <name>      Environment (default: dev)
   -E, --example <path>  Path to .env.example (default: .env.example)
   --no-color            Disable color output
-  --explain             Show .env.example format reference
 
-Check modes:
+Check modes (default: standard — status + key + value, no section headers):
+  -v, --verbose         Add section titles and dividers to output
   -q, --quiet           Symbol + key name only
   -s, --silent          No output on success
   -m, --mismatch        List only errors
 
-Output modes:
-  -g, --get [KEYS...]   KEY=VALUE lines (all vars if no keys given)
-      --json            JSON output (with --get)
-  -D, --dump            Full .env to stdout
-  -o, --output <file>   Full .env to file
-
 Modifier:
-  --no-mask             Show secret values in check modes
+  --no-mask             Show secret values unmasked
+
+get options:
+  --json                JSON output instead of KEY=VALUE
+
+dump options:
+  -o, --output <file>   Write .env to file instead of stdout
 ```

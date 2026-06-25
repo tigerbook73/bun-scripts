@@ -49,7 +49,7 @@ const EXPLAIN_TEMPLATE = `\
 # 本文件展示 check-env 工具支持的完整 .env.example 语法
 # 可直接复制作为新项目的 .env.example 起点
 #
-# 用法：check-env [--env dev|prod] [--silent] [--mismatch-only]
+# 用法：check-env [check] [-v|-q|-s|-m] [--env dev|prod]
 
 # ────────────────────────────────────────
 # 必填变量（基础写法）
@@ -112,7 +112,7 @@ Validates that all required environment variables declared in .env.example
 are configured in the current environment. Type hints are validated by default.
 
 Subcommands:
-  check (default)    Validate env vars (verbose output by default)
+  check (default)    Validate env vars (standard output by default)
   get [KEY...]       Print KEY=VALUE lines for configured vars (all if no KEYS given)
   dump               Print full .env to stdout, or write to file with -o
   explain            Print .env.example format reference template
@@ -125,6 +125,7 @@ Global options:
   --no-color             Disable color output
 
 check options:
+  -v, --verbose    Verbose — show values, source files, and section titles
   -q, --quiet      Compact — status symbol and key name only
   -s, --silent     No output on success; list errors on failure
   -m, --mismatch   List only missing required vars and type errors
@@ -142,7 +143,8 @@ Environment file priority:
   <custom>: .env → .env.<name> → .env.<name>.local
 
 Examples:
-  check-env                              verbose check (default)
+  check-env                              standard check (default)
+  check-env -v                           verbose check with section titles
   check-env -e prod -s                   silent CI check for prod
   check-env check -q                     compact output
   check-env get                          all configured vars (KEY=VALUE)

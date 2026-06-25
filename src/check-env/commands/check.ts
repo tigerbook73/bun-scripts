@@ -49,6 +49,44 @@ export class EnvChecker {
     return this.hasMissing() || this.hasTypeErrors();
   }
 
+  printStandard({ noMask = false }: { noMask?: boolean } = {}): void {
+    const { sections, color } = this;
+
+    const displayCache = new Map<ResolvedVar, string>();
+    let maxKeyLen = 0;
+    let maxValLen = 0;
+    for (const s of sections) {
+      for (const v of s.vars) {
+        if (v.name.length > maxKeyLen) maxKeyLen = v.name.length;
+        const vd = this.valueDisplay(v, noMask);
+        displayCache.set(v, vd);
+        if (vd.length > maxValLen) maxValLen = vd.length;
+      }
+    }
+    maxValLen = Math.min(maxValLen, VALUE_COL_MAX);
+
+    for (const section of sections) {
+      for (const v of section.vars) {
+        const status = this.statusChar(v);
+        const name = v.name.padEnd(maxKeyLen);
+        const rawVal = displayCache.get(v) ?? "";
+        const truncatedRaw = truncate(rawVal, maxValLen);
+        const paddedRaw = truncatedRaw.padEnd(maxValLen);
+        const coloredVal = v.value !== null ? paddedRaw : color.muted(paddedRaw);
+        const src = v.source !== null ? color.muted(`# ${v.source}`) : "";
+        console.log(`${status}  ${name}  ${coloredVal}  ${src}`.trimEnd());
+      }
+    }
+
+    const typeErrors = this.typeErrorVars();
+    if (typeErrors.length > 0) {
+      console.log("");
+      for (const v of typeErrors) {
+        console.log(color.warn(`⚠  ${v.name}: "${v.value}" is not a valid <${v.typeHint}>`));
+      }
+    }
+  }
+
   printVerbose({ noMask = false }: { noMask?: boolean } = {}): void {
     const { sections, color } = this;
 
@@ -98,8 +136,7 @@ export class EnvChecker {
 
   printQuiet(): void {
     const { sections } = this;
-    for (const [i, section] of sections.entries()) {
-      if (section.title && i > 0) process.stdout.write("\n");
+    for (const section of sections) {
       for (const v of section.vars) {
         console.log(`${this.statusChar(v)}  ${v.name}`);
       }
@@ -173,6 +210,9 @@ export function runCheck(args: {
   );
   const checker = new EnvChecker({ sections, color });
   switch (args.display) {
+    case "standard":
+      checker.printStandard({ noMask: args.noMask });
+      break;
     case "verbose":
       checker.printVerbose({ noMask: args.noMask });
       break;

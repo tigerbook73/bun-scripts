@@ -64,6 +64,7 @@ function parseCliArgs(argv: string[]): ParsedArgs {
       example: { type: "string" as const, short: "E" },
       "no-color": { type: "boolean" as const },
       // check options
+      verbose: { type: "boolean" as const, short: "v" },
       quiet: { type: "boolean" as const, short: "q" },
       silent: { type: "boolean" as const, short: "s" },
       mismatch: { type: "boolean" as const, short: "m" },
@@ -120,7 +121,7 @@ function parseCliArgs(argv: string[]): ParsedArgs {
         console.error(`Error: unexpected arguments: ${subPositionals.join(", ")}`);
         process.exit(1);
       }
-      const checkFlags = ["quiet", "silent", "mismatch"] as const;
+      const checkFlags = ["verbose", "quiet", "silent", "mismatch"] as const;
       const activeCheck = checkFlags.filter((f) => values[f]);
       if (activeCheck.length > 1) {
         console.error(`Error: --${activeCheck[0]} and --${activeCheck[1]} cannot be combined`);
@@ -131,7 +132,7 @@ function parseCliArgs(argv: string[]): ParsedArgs {
         env,
         example,
         noColor,
-        display: activeCheck[0] ?? "verbose",
+        display: activeCheck[0] ?? "standard",
         noMask: values["no-mask"] ?? false,
       };
     }

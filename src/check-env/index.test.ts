@@ -702,6 +702,18 @@ describe("EnvChecker", () => {
       const lines = captureLog(() => checker.printQuiet());
       expect(lines[0]).toContain("⚠");
     });
+
+    test("does not print blank lines between sections", () => {
+      const checker = new EnvChecker({
+        sections: [
+          { title: "# Sec A", vars: [configured("A")] },
+          { title: "# Sec B", vars: [configured("B")] },
+        ],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printQuiet());
+      expect(lines).not.toContain("");
+    });
   });
 
   describe("printSilent", () => {
@@ -775,6 +787,78 @@ describe("EnvChecker", () => {
       });
       const lines = captureLog(() => checker.printMismatchOnly());
       expect(lines).toHaveLength(0);
+    });
+  });
+
+  describe("printStandard", () => {
+    test("includes source file as comment", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [configured()] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printStandard());
+      expect(lines[0]).toContain("# .env");
+    });
+
+    test("masks secret values by default", () => {
+      const checker = new EnvChecker({
+        sections: [
+          {
+            title: null,
+            vars: [makeVar({ name: "API_KEY", isSecret: true, value: "sk-secret123" })],
+          },
+        ],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printStandard());
+      expect(lines[0]).not.toContain("sk-secret123");
+      expect(lines[0]).toContain("****");
+    });
+
+    test("shows secret value when noMask is true", () => {
+      const checker = new EnvChecker({
+        sections: [
+          {
+            title: null,
+            vars: [makeVar({ name: "API_KEY", isSecret: true, value: "sk-secret123" })],
+          },
+        ],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printStandard({ noMask: true }));
+      expect(lines[0]).toContain("sk-secret123");
+    });
+
+    test("appends type error summary line after the var list", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [typeError("PORT")] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printStandard());
+      const summary = lines[lines.length - 1]!;
+      expect(summary).toContain("PORT");
+      expect(summary).toContain("<number>");
+    });
+
+    test("does not print section titles", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: "# Database", vars: [configured()] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printStandard());
+      expect(lines).not.toContain("# Database");
+    });
+
+    test("does not print blank lines between sections", () => {
+      const checker = new EnvChecker({
+        sections: [
+          { title: "# Sec A", vars: [configured("A")] },
+          { title: "# Sec B", vars: [configured("B")] },
+        ],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printStandard());
+      expect(lines).not.toContain("");
     });
   });
 
