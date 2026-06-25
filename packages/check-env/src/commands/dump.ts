@@ -4,7 +4,7 @@
  *   writing to stdout or a file. Aborts with exit 1 if any vars are missing or invalid.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import type { ResolvedSection } from "../lib/types";
 import { makeColorPalette } from "../lib/color";
 import { parseEnvExample } from "../lib/parser";
@@ -76,7 +76,7 @@ export async function runDump(args: {
   }
   const content = buildEnvContent(sections);
   if (args.outputFile !== null) {
-    await Bun.write(args.outputFile, content);
+    writeFileSync(args.outputFile, content);
   } else {
     process.stdout.write(content);
   }

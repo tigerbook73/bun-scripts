@@ -1,0 +1,46 @@
+{
+  "name": "@tigerbook/check-env",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Validates required environment variables declared in .env.example",
+  "license": "MIT",
+  "author": "tigerbook",
+  "keywords": [
+    "env",
+    "dotenv",
+    "cli",
+    "bun",
+    "check-env"
+  ],
+  "bin": {
+    "check-env": "src/index.ts"
+  },
+  "publishConfig": {
+    "bin": {
+      "check-env": "dist/index.js"
+    },
+    "files": [
+      "dist"
+    ],
+    "engines": {
+      "node": ">=22.0.0"
+    }
+  },
+  "dependencies": {
+    "picocolors": "^1.1.1"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "bun build src/index.ts --outfile dist/index.js --target node && sed -i '1s|.*|#!/usr/bin/env node|' dist/index.js && chmod +x dist/index.js",
+    "prepack": "bun run build",
+    "test": "bun test",
+    "lint": "eslint src --fix",
+    "lint:check": "eslint src",
+    "typecheck": "tsc --noEmit"
+  }
+}

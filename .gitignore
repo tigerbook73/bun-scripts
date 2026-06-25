@@ -6,6 +6,9 @@ out
 dist
 *.tgz
 
+# pnpm
+pnpm-lock.yaml
+
 # code coverage
 coverage
 *.lcov

@@ -20,8 +20,8 @@
  *   r --help             Show this help
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { Glob } from "bun";
+import { existsSync, globSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 
 type PackageManager = "pnpm" | "bun" | "yarn" | "npm";
 
@@ -135,26 +135,22 @@ export class PackageScriptRunner {
     if (this.query && candidates.length === 0) {
       const args = [this.query, ...this.extra];
       console.log(`\nNo matching scripts, trying: ${this.pm} ${args.join(" ")}\n`);
-      const result = Bun.spawnSync([this.pm, ...args], {
-        stdin: "inherit",
-        stdout: "inherit",
-        stderr: "inherit",
-      });
-      process.exit(result.exitCode ?? 1);
+      const result = spawnSync(this.pm, args, { stdio: "inherit" });
+      process.exit(result.status ?? 1);
     }
 
     try {
-      const fzf = Bun.spawnSync(["fzf", "--query", this.query], {
-        stdin: Buffer.from(candidates.join("\n")),
-        stdout: "pipe",
-        stderr: "inherit",
+      const fzf = spawnSync("fzf", ["--query", this.query], {
+        input: candidates.join("\n"),
+        stdio: ["pipe", "pipe", "inherit"],
+        encoding: "utf8",
       });
 
-      if (fzf.exitCode !== 0) {
-        process.exit(fzf.exitCode);
+      if (fzf.status !== 0) {
+        process.exit(fzf.status ?? 1);
       }
 
-      return fzf.stdout.toString().trim();
+      return (fzf.stdout as string).trim();
     } catch (err) {
       console.error(
         `Error: failed to launch fzf — ${err instanceof Error ? err.message : String(err)}`,
@@ -169,12 +165,8 @@ export class PackageScriptRunner {
 
     const args = buildRunArgs(this.pm, target.filter, target.script, this.extra);
     console.log(`\n🚀 Executing: ${this.pm} ${args.join(" ")}\n`);
-    const result = Bun.spawnSync([this.pm, ...args], {
-      stdin: "inherit",
-      stdout: "inherit",
-      stderr: "inherit",
-    });
-    process.exit(result.exitCode ?? 1);
+    const result = spawnSync(this.pm, args, { stdio: "inherit" });
+    process.exit(result.status ?? 1);
   }
 
   private collectScripts(): Map<string, ScriptEntry> {
@@ -222,8 +214,7 @@ export class PackageScriptRunner {
     const packages: Array<{ name: string; shortName: string; scripts: string[] }> = [];
 
     for (const pattern of patterns) {
-      const glob = new Glob(`${pattern}/package.json`);
-      for (const file of glob.scanSync({ cwd: ".", onlyFiles: true })) {
+      for (const file of globSync(`${pattern}/package.json`, { cwd: "." })) {
         try {
           const pkg = JSON.parse(readFileSync(file, "utf8")) as {
             name?: string;
@@ -289,7 +280,7 @@ if (import.meta.main) {
     printHelp();
     process.exit(0);
   }
-  if (!Bun.which("fzf")) {
+  if (spawnSync("which", ["fzf"], { stdio: "ignore" }).status !== 0) {
     console.error("Error: fzf not found — install it from https://github.com/junegunn/fzf");
     process.exit(1);
   }

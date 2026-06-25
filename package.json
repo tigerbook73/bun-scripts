@@ -2,18 +2,16 @@
   "name": "bun-scripts",
   "type": "module",
   "private": true,
-  "bin": {
-    "check-env": "src/check-env/index.ts",
-    "r": "src/run-package-scripts/index.ts"
-  },
   "scripts": {
-    "test": "bun test",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "lint:check": "pnpm -r lint:check",
     "format": "prettier --log-level warn --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint src --fix",
-    "lint:check": "eslint src",
-    "typecheck": "tsc --noEmit",
-    "verify": "bun --parallel lint format typecheck test"
+    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm -r build",
+    "bun-link": "pnpm -r exec bun link",
+    "verify": "pnpm -r --parallel lint && pnpm format&& pnpm -r --parallel typecheck && pnpm -r --parallel test"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -24,7 +22,5 @@
     "prettier": "^3.8.4",
     "typescript": "^6.0.3"
   },
-  "dependencies": {
-    "picocolors": "^1.1.1"
-  }
+  "packageManager": "pnpm@10.33.3+sha512.a19744364a7e248b92657a4ca5973f9354d21caf982579674b1c539f32c7420c47138ad8b1254df07aba9bc782d9b3029e3db34d5dbff974326eb74dac8ff489"
 }
