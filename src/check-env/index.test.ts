@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 // Tests access array elements immediately after asserting their length — non-null assertions are safe here.
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, spyOn } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
@@ -10,10 +10,14 @@ import {
   resolveVars,
   isSecret,
   maskValue,
+  stripInlineComment,
   buildEnvContent,
   buildGetOutput,
   buildJsonOutput,
+  EnvChecker,
+  makeColorPalette,
 } from "./index";
+import type { ResolvedVar } from "./index";
 
 function scaffold(dir: string, files: Record<string, string>): void {
   for (const [path, content] of Object.entries(files)) {
@@ -22,6 +26,53 @@ function scaffold(dir: string, files: Record<string, string>): void {
     writeFileSync(full, content);
   }
 }
+
+// ─── EnvChecker test helpers ──────────────────────────────────────────────────
+
+const noColor = makeColorPalette(false);
+
+function makeVar(overrides: Partial<ResolvedVar>): ResolvedVar {
+  return {
+    name: "KEY",
+    required: true,
+    exampleValue: null,
+    defaultValue: null,
+    isSecret: false,
+    inlineComment: null,
+    typeHint: null,
+    source: ".env",
+    value: "value",
+    typeValid: true,
+    ...overrides,
+  };
+}
+
+function configured(name = "KEY"): ResolvedVar {
+  return makeVar({ name });
+}
+
+function missing(name = "KEY"): ResolvedVar {
+  return makeVar({ name, source: null, value: null });
+}
+
+function typeError(name = "KEY"): ResolvedVar {
+  return makeVar({ name, typeHint: "number", value: "not-a-number", typeValid: false });
+}
+
+function captureLog(fn: () => void): string[] {
+  const lines: string[] = [];
+  const spy = spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+    lines.push(args.map(String).join(" "));
+  });
+  try {
+    fn();
+  } finally {
+    spy.mockRestore();
+  }
+  return lines;
+}
+
+// ─── Filesystem setup ─────────────────────────────────────────────────────────
 
 let tmpDir: string;
 let originalCwd: string;
@@ -91,6 +142,30 @@ describe("maskValue", () => {
   });
 });
 
+// ─── stripInlineComment ───────────────────────────────────────────────────────
+
+describe("stripInlineComment", () => {
+  test("strips inline comment from unquoted value", () => {
+    expect(stripInlineComment("value # comment")).toBe("value");
+  });
+
+  test("trims surrounding whitespace from unquoted value", () => {
+    expect(stripInlineComment("  value  ")).toBe("value");
+  });
+
+  test("preserves # inside double quotes", () => {
+    expect(stripInlineComment('"value # not a comment"')).toBe("value # not a comment");
+  });
+
+  test("preserves # inside single quotes", () => {
+    expect(stripInlineComment("'value # not a comment'")).toBe("value # not a comment");
+  });
+
+  test("returns empty string for empty input", () => {
+    expect(stripInlineComment("")).toBe("");
+  });
+});
+
 // ─── parseEnvFile ─────────────────────────────────────────────────────────────
 
 describe("parseEnvFile", () => {
@@ -135,6 +210,11 @@ describe("parseEnvFile", () => {
   test("later duplicate key wins", () => {
     const map = parseEnvFile("KEY=first\nKEY=second\n");
     expect(map.get("KEY")).toBe("second");
+  });
+
+  test("preserves # inside double-quoted value", () => {
+    const map = parseEnvFile('KEY="value # not a comment"');
+    expect(map.get("KEY")).toBe("value # not a comment");
   });
 });
 
@@ -274,6 +354,17 @@ describe("parseEnvExample", () => {
     const sections = parseEnvExample("DB_PORT=5432\n");
     expect(sections[0]!.vars[0]!.typeHint).toBeNull();
   });
+
+  test("duplicate active key warns and keeps first occurrence", () => {
+    const errSpy = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const sections = parseEnvExample("KEY=val1\nKEY=val2\n");
+      expect(sections[0]!.vars).toHaveLength(1);
+      expect(errSpy.mock.calls[0]?.[0]).toContain("duplicate");
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
 });
 
 // ─── resolveVars ──────────────────────────────────────────────────────────────
@@ -378,6 +469,20 @@ describe("resolveVars", () => {
     const sections = resolveVars(parseEnvExample("API_URL=<url>\n"), [".env"]);
     expect(sections[0]!.vars[0]!.typeValid).toBe(false);
   });
+
+  test("typeValid is true for all valid boolean literals", () => {
+    for (const v of ["true", "false", "yes", "no", "0", "1"]) {
+      scaffold(tmpDir, { ".env": `FLAG=${v}\n` });
+      const sections = resolveVars(parseEnvExample("FLAG=<boolean>\n"), [".env"]);
+      expect(sections[0]!.vars[0]!.typeValid).toBe(true);
+    }
+  });
+
+  test("typeValid is true for a valid URL", () => {
+    scaffold(tmpDir, { ".env": "API_URL=https://example.com\n" });
+    const sections = resolveVars(parseEnvExample("API_URL=<url>\n"), [".env"]);
+    expect(sections[0]!.vars[0]!.typeValid).toBe(true);
+  });
 });
 
 // ─── buildEnvContent ──────────────────────────────────────────────────────────
@@ -427,6 +532,17 @@ describe("buildEnvContent", () => {
     const sections = resolveVars(parseEnvExample("A=\n\nB=\n"), [".env"]);
     expect(buildEnvContent(sections)).toMatch(/A=1\n\nB=2/);
   });
+
+  test("required var with defaultValue but unconfigured outputs empty placeholder", () => {
+    const sections = resolveVars(parseEnvExample("TIMEOUT=30    # default: 30\n"), []);
+    expect(buildEnvContent(sections)).toContain("TIMEOUT=");
+    expect(buildEnvContent(sections)).not.toContain("# TIMEOUT=");
+  });
+
+  test("optional var with null exampleValue outputs as # KEY=", () => {
+    const sections = resolveVars(parseEnvExample("# OPT=\n"), []);
+    expect(buildEnvContent(sections)).toContain("# OPT=");
+  });
 });
 
 // ─── buildGetOutput / buildJsonOutput ─────────────────────────────────────────
@@ -460,6 +576,21 @@ describe("buildGetOutput", () => {
     const out = buildGetOutput(sections, []);
     expect(out).toContain("API_KEY=secret123");
   });
+
+  test("warns to stderr when a requested key is not in example", () => {
+    const messages: string[] = [];
+    const stderrSpy = spyOn(process.stderr, "write").mockImplementation((data) => {
+      messages.push(String(data));
+      return true;
+    });
+    try {
+      const sections = resolveVars(parseEnvExample("A=\n"), []);
+      buildGetOutput(sections, ["UNKNOWN"]);
+      expect(messages.some((m) => m.includes("UNKNOWN"))).toBe(true);
+    } finally {
+      stderrSpy.mockRestore();
+    }
+  });
 });
 
 describe("buildJsonOutput", () => {
@@ -476,5 +607,234 @@ describe("buildJsonOutput", () => {
     const parsed = JSON.parse(buildJsonOutput(sections, ["A"]));
     expect(parsed).toMatchObject({ A: "1" });
     expect(parsed.B).toBeUndefined();
+  });
+});
+
+// ─── EnvChecker ───────────────────────────────────────────────────────────────
+
+describe("EnvChecker", () => {
+  describe("hasMissing / hasTypeErrors / hasErrors", () => {
+    test("all false when all vars are configured and valid", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [configured()] }],
+        color: noColor,
+      });
+      expect(checker.hasMissing()).toBe(false);
+      expect(checker.hasTypeErrors()).toBe(false);
+      expect(checker.hasErrors()).toBe(false);
+    });
+
+    test("hasMissing true when required var has no source and no defaultValue", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [missing()] }],
+        color: noColor,
+      });
+      expect(checker.hasMissing()).toBe(true);
+      expect(checker.hasErrors()).toBe(true);
+    });
+
+    test("hasMissing false when required var has a defaultValue", () => {
+      const checker = new EnvChecker({
+        sections: [
+          { title: null, vars: [makeVar({ source: null, value: null, defaultValue: "30" })] },
+        ],
+        color: noColor,
+      });
+      expect(checker.hasMissing()).toBe(false);
+    });
+
+    test("hasMissing false for optional unconfigured var", () => {
+      const checker = new EnvChecker({
+        sections: [
+          { title: null, vars: [makeVar({ required: false, source: null, value: null })] },
+        ],
+        color: noColor,
+      });
+      expect(checker.hasMissing()).toBe(false);
+    });
+
+    test("hasTypeErrors true when typeValid is false", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [typeError()] }],
+        color: noColor,
+      });
+      expect(checker.hasTypeErrors()).toBe(true);
+      expect(checker.hasErrors()).toBe(true);
+    });
+  });
+
+  describe("printQuiet", () => {
+    test("outputs ✓ for a configured var", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [configured()] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printQuiet());
+      expect(lines[0]).toContain("✓");
+      expect(lines[0]).toContain("KEY");
+    });
+
+    test("outputs ✗ for a missing required var", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [missing()] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printQuiet());
+      expect(lines[0]).toContain("✗");
+    });
+
+    test("outputs — for an optional unconfigured var", () => {
+      const checker = new EnvChecker({
+        sections: [
+          { title: null, vars: [makeVar({ required: false, source: null, value: null })] },
+        ],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printQuiet());
+      expect(lines[0]).toContain("—");
+    });
+
+    test("outputs ⚠ for a type error var", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [typeError()] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printQuiet());
+      expect(lines[0]).toContain("⚠");
+    });
+  });
+
+  describe("printSilent", () => {
+    test("produces no output when there are no errors", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [configured()] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printSilent());
+      expect(lines).toHaveLength(0);
+    });
+
+    test("lists missing vars with header", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [missing("MISSING_VAR")] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printSilent());
+      const out = lines.join("\n");
+      expect(out).toContain("not configured");
+      expect(out).toContain("MISSING_VAR");
+    });
+
+    test("lists type error vars with header", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [typeError("BAD_PORT")] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printSilent());
+      const out = lines.join("\n");
+      expect(out).toContain("type validation");
+      expect(out).toContain("BAD_PORT");
+    });
+
+    test("shows both missing and type error groups when both present", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [missing("MISSING_VAR"), typeError("BAD_PORT")] }],
+        color: noColor,
+      });
+      const out = captureLog(() => checker.printSilent()).join("\n");
+      expect(out).toContain("MISSING_VAR");
+      expect(out).toContain("BAD_PORT");
+    });
+  });
+
+  describe("printMismatchOnly", () => {
+    test("lists ✗ for missing required vars", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [missing("MISSING_VAR")] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printMismatchOnly());
+      expect(lines[0]).toContain("✗");
+      expect(lines[0]).toContain("MISSING_VAR");
+    });
+
+    test("lists ⚠ for type error vars", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [typeError("BAD_PORT")] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printMismatchOnly());
+      expect(lines[0]).toContain("⚠");
+      expect(lines[0]).toContain("BAD_PORT");
+    });
+
+    test("produces no output when there are no errors", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [configured()] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printMismatchOnly());
+      expect(lines).toHaveLength(0);
+    });
+  });
+
+  describe("printVerbose", () => {
+    test("includes source file as comment", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [configured()] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printVerbose());
+      expect(lines[0]).toContain("# .env");
+    });
+
+    test("masks secret values by default", () => {
+      const checker = new EnvChecker({
+        sections: [
+          {
+            title: null,
+            vars: [makeVar({ name: "API_KEY", isSecret: true, value: "sk-secret123" })],
+          },
+        ],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printVerbose());
+      expect(lines[0]).not.toContain("sk-secret123");
+      expect(lines[0]).toContain("****");
+    });
+
+    test("shows secret value when noMask is true", () => {
+      const checker = new EnvChecker({
+        sections: [
+          {
+            title: null,
+            vars: [makeVar({ name: "API_KEY", isSecret: true, value: "sk-secret123" })],
+          },
+        ],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printVerbose({ noMask: true }));
+      expect(lines[0]).toContain("sk-secret123");
+    });
+
+    test("appends type error summary line after the var list", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: null, vars: [typeError("PORT")] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printVerbose());
+      const summary = lines[lines.length - 1]!;
+      expect(summary).toContain("PORT");
+      expect(summary).toContain("<number>");
+    });
+
+    test("prints section title before vars", () => {
+      const checker = new EnvChecker({
+        sections: [{ title: "# Database", vars: [configured()] }],
+        color: noColor,
+      });
+      const lines = captureLog(() => checker.printVerbose());
+      expect(lines[0]).toBe("# Database");
+    });
   });
 });
