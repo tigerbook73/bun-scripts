@@ -289,5 +289,9 @@ if (import.meta.main) {
     printHelp();
     process.exit(0);
   }
+  if (!Bun.which("fzf")) {
+    console.error("Error: fzf not found — install it from https://github.com/junegunn/fzf");
+    process.exit(1);
+  }
   new PackageScriptRunner().run();
 }
