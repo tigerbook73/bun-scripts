@@ -1,3 +1,9 @@
+/**
+ * @file lib/parser.ts
+ * @description Parses .env.example files into typed sections,
+ *   and .env files into key→value maps.
+ */
+
 import type { ExampleSection, ExampleVar } from "./types";
 
 const SECRET_KEYWORDS = ["PASSWORD", "SECRET", "KEY", "TOKEN", "PASS"];

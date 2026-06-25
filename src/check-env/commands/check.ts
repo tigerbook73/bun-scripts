@@ -1,6 +1,15 @@
-import type { ResolvedSection, ResolvedVar } from "./types";
-import { ColorPalette } from "./color";
-import { maskValue } from "./parser";
+/**
+ * @file commands/check.ts
+ * @description "check" subcommand — validates that all required env vars are configured
+ *   and prints results. Also exports the EnvChecker class for library use.
+ */
+
+import { existsSync, readFileSync } from "node:fs";
+import type { ResolvedSection, ResolvedVar, CheckDisplay } from "../lib/types";
+import type { ColorPalette } from "../lib/color";
+import { makeColorPalette } from "../lib/color";
+import { maskValue, parseEnvExample } from "../lib/parser";
+import { resolveVars, getEnvFiles } from "../lib/resolver";
 
 const VALUE_COL_MAX = 36;
 
@@ -144,4 +153,38 @@ export class EnvChecker {
     if (!v.required) return "(optional)";
     return "(not set)";
   }
+}
+
+export function runCheck(args: {
+  env: string;
+  example: string;
+  noColor: boolean;
+  display: CheckDisplay;
+  noMask: boolean;
+}): void {
+  const color = makeColorPalette(!args.noColor);
+  if (!existsSync(args.example)) {
+    console.error(`Error: ${args.example} not found in current directory`);
+    process.exit(1);
+  }
+  const sections = resolveVars(
+    parseEnvExample(readFileSync(args.example, "utf8")),
+    getEnvFiles(args.env),
+  );
+  const checker = new EnvChecker({ sections, color });
+  switch (args.display) {
+    case "verbose":
+      checker.printVerbose({ noMask: args.noMask });
+      break;
+    case "quiet":
+      checker.printQuiet();
+      break;
+    case "silent":
+      checker.printSilent();
+      break;
+    case "mismatch":
+      checker.printMismatchOnly();
+      break;
+  }
+  process.exit(checker.hasErrors() ? 1 : 0);
 }

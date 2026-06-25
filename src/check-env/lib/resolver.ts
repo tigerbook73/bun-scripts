@@ -1,3 +1,9 @@
+/**
+ * @file lib/resolver.ts
+ * @description Resolves env variable sources and values by loading
+ *   env files in priority order (low → high).
+ */
+
 import { existsSync, readFileSync } from "node:fs";
 import type { ExampleSection, ResolvedSection, ResolvedVar } from "./types";
 import { parseEnvFile } from "./parser";
@@ -20,6 +26,13 @@ function validateTypeHint(value: string, hint: string): boolean {
     default:
       return true;
   }
+}
+
+/** Returns the ordered list of env files to load for the given environment name. */
+export function getEnvFiles(env: string): string[] {
+  if (env === "dev") return [".env", ".env.local", ".env.development", ".env.development.local"];
+  if (env === "prod") return [".env", ".env.production", ".env.production.local"];
+  return [".env", `.env.${env}`, `.env.${env}.local`];
 }
 
 /**

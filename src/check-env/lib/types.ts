@@ -1,3 +1,9 @@
+/**
+ * @file lib/types.ts
+ * @description Shared type definitions for check-env:
+ *   example sections, resolved variables, and display modes.
+ */
+
 export interface ExampleVar {
   name: string;
   required: boolean;
@@ -33,3 +39,5 @@ export interface ResolvedSection {
 
 /** Environment name: "dev" and "prod" have predefined file chains; any other name is inferred. */
 export type Env = string;
+
+export type CheckDisplay = "verbose" | "quiet" | "silent" | "mismatch";

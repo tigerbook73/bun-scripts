@@ -1,8 +1,15 @@
-import { ColorPalette } from "./color";
+/**
+ * @file commands/explain.ts
+ * @description "explain" subcommand — prints the .env.example format reference template.
+ *   Also provides printHelp(), used by the CLI parser for --help short-circuiting.
+ */
+
+import type { ColorPalette } from "../lib/color";
+import { makeColorPalette } from "../lib/color";
 
 const TYPE_HINT_RE = /^<\w+>$/;
 
-/** Colorize a single line of the --explain template output. */
+/** Colorize a single line of the explain template output. */
 function colorizeExplainLine(line: string, color: ColorPalette): string {
   if (!line.trim()) return line;
 
@@ -99,33 +106,35 @@ export function printExplain(color: ColorPalette): void {
 
 export function printHelp(): void {
   console.log(`\
-Usage: check-env [options] [mode] [KEYS...]
+Usage: check-env [subcommand] [options]
 
 Validates that all required environment variables declared in .env.example
 are configured in the current environment. Type hints are validated by default.
 
+Subcommands:
+  check (default)    Validate env vars (verbose output by default)
+  get [KEY...]       Print KEY=VALUE lines for configured vars (all if no KEYS given)
+  dump               Print full .env to stdout, or write to file with -o
+  explain            Print .env.example format reference template
+
 Global options:
-  -h, --help            Show this help message
-  -e, --env <name>      Environment to check (default: dev)
-                        Built-in: dev, prod. Custom names infer their own file chain.
-  -E, --example <path>  Path to .env.example (default: .env.example)
-  --no-color            Disable color output
-  --explain             Print .env.example format reference template
+  -h, --help             Show this help message
+  -e, --env <name>       Environment to check (default: dev)
+                         Built-in: dev, prod. Custom names infer their own file chain.
+  -E, --example <path>   Path to .env.example (default: .env.example)
+  --no-color             Disable color output
 
-Check modes (default: verbose; mutually exclusive):
-  -q, --quiet           Compact — status symbol and key name only
-  -s, --silent          No output on success; list errors on failure
-  -m, --mismatch        List only missing required vars and type errors
+check options:
+  -q, --quiet      Compact — status symbol and key name only
+  -s, --silent     No output on success; list errors on failure
+  -m, --mismatch   List only missing required vars and type errors
+  --no-mask        Show secret values unmasked
 
-Output modes (run check first; exit 1 on errors; mutually exclusive with check modes):
-  -g, --get [KEYS...]   Print KEY=VALUE lines for configured vars (all if no KEYS given)
-      --json            Output JSON instead of KEY=VALUE (requires --get)
-  -D, --dump            Print full .env to stdout (mirrors .env.example structure)
-  -o, --output <file>   Write full .env to file
-                        --dump and --output can be combined to write to both destinations.
+get options:
+  --json           Output JSON instead of KEY=VALUE
 
-Display modifier:
-  --no-mask             Show secret values unmasked in check display modes
+dump options:
+  -o, --output <file>  Write .env to file instead of stdout
 
 Environment file priority:
   dev:      .env → .env.local → .env.development → .env.development.local
@@ -133,25 +142,25 @@ Environment file priority:
   <custom>: .env → .env.<name> → .env.<name>.local
 
 Examples:
-  # Checking environment
-  check-env                              verbose check for dev
+  check-env                              verbose check (default)
   check-env -e prod -s                   silent CI check for prod
-  check-env -q                           compact: one line per variable
-  check-env --no-mask                    show actual secret values
-
-  # Getting values
-  check-env -g                           all configured vars (KEY=VALUE)
-  env \$(check-env -g) node app.js        inject all vars into a subprocess
-  check-env -g DB_HOST DB_PORT           specific keys only
-  check-env -g --json                    JSON format for scripting
-
-  # Generating .env files
-  check-env --dump                       full .env to stdout
-  check-env -o .env.development.full     write snapshot to file
-  check-env --dump -o .env.full          stdout and file simultaneously
+  check-env check -q                     compact output
+  check-env get                          all configured vars (KEY=VALUE)
+  env \$(check-env get) node app.js       inject all vars into a subprocess
+  check-env get DB_HOST DB_PORT          specific keys only
+  check-env get --json                   JSON format for scripting
+  check-env dump                         full .env to stdout
+  check-env dump -o .env.snapshot        write snapshot to file
+  check-env explain                      .env.example format reference
 
 Exit codes:
-  0  All checks pass (or --explain / --help used)
+  0  All checks pass (or explain / help used)
   1  Missing required vars, type errors, or .env.example not found
 `);
+}
+
+export function runExplain(args: { noColor: boolean }): void {
+  const color = makeColorPalette(!args.noColor);
+  printExplain(color);
+  process.exit(0);
 }
