@@ -12,7 +12,8 @@
     "build": "pnpm -r build",
     "bun-link": "pnpm -r exec bun link",
     "changeset": "changeset",
-    "verify": "pnpm -r --parallel lint && pnpm format&& pnpm -r --parallel typecheck && pnpm -r --parallel test"
+    "verify": "pnpm -r --parallel lint && pnpm format&& pnpm -r --parallel typecheck && pnpm -r --parallel test",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
@@ -21,6 +22,7 @@
     "@typescript-eslint/parser": "^8.62.0",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
+    "lefthook": "^2.1.9",
     "prettier": "^3.8.4",
     "typescript": "^6.0.3"
   },

@@ -9,8 +9,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write      # Trusted Publishing
-      contents: write      # push version commits
+      id-token: write # Trusted Publishing
+      contents: write # push version commits
       pull-requests: write # create Version Packages PR
 
     steps:

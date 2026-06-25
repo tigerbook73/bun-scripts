@@ -113,11 +113,11 @@ Run `check-env explain` for a full annotated reference.
 
 ## Environment file priority
 
-| Environment     | Files loaded (low → high priority)                                     |
-| --------------- | ---------------------------------------------------------------------- |
-| `dev` (default) | `.env` → `.env.local` → `.env.development` → `.env.development.local`  |
-| `prod`          | `.env` → `.env.production` → `.env.production.local`                   |
-| `<custom>`      | `.env` → `.env.<name>` → `.env.<name>.local`                           |
+| Environment     | Files loaded (low → high priority)                                    |
+| --------------- | --------------------------------------------------------------------- |
+| `dev` (default) | `.env` → `.env.local` → `.env.development` → `.env.development.local` |
+| `prod`          | `.env` → `.env.production` → `.env.production.local`                  |
+| `<custom>`      | `.env` → `.env.<name>` → `.env.<name>.local`                          |
 
 ## Options
 
