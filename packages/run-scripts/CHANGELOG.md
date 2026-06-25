@@ -1,5 +1,11 @@
 # @tigerbook/run-scripts
 
+## 0.2.1
+
+### Patch Changes
+
+- d2c8ab3: docs: simplify fzf Linux install note and fix table alignment in README
+
 ## 0.2.0
 
 ### Minor Changes
