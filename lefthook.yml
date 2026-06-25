@@ -15,6 +15,7 @@ pre-commit:
       stage_fixed: true
     format:
       priority: 2
+      glob: "**/*.{ts,js,json,md,yaml,yml}"
       run: pnpm prettier --write {staged_files}
       stage_fixed: true
     typecheck:
