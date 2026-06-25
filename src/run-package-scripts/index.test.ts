@@ -8,7 +8,7 @@ import {
   detectPackageManager,
   buildRunArgs,
   PackageScriptRunner,
-} from "./run-package-scripts";
+} from "./index";
 
 /** Write multiple files into a temp dir in one call */
 function scaffold(dir: string, files: Record<string, string>): void {

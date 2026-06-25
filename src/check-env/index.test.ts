@@ -8,7 +8,7 @@ import {
   resolveVars,
   isSecret,
   maskValue,
-} from "./check-env";
+} from "./index";
 
 function scaffold(dir: string, files: Record<string, string>): void {
   for (const [path, content] of Object.entries(files)) {

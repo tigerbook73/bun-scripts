@@ -1,11 +1,11 @@
 [
   {
-    "src": "src/run-package-scripts.ts",
+    "src": "src/run-package-scripts/index.ts",
     "name": "r",
     "dir": "~/.local/bin"
   },
   {
-    "src": "src/check-env.ts",
+    "src": "src/check-env/index.ts",
     "name": "check-env",
     "dir": "~/.local/bin"
   }
