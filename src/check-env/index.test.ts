@@ -218,7 +218,11 @@ describe("parseEnvExample", () => {
 
   test("extracts defaultValue from inline comment", () => {
     const sections = parseEnvExample("TIMEOUT=30    # number, unit: seconds, default: 30\n");
-    expect(sections[0]!.vars[0]).toMatchObject({ name: "TIMEOUT", required: true, defaultValue: "30" });
+    expect(sections[0]!.vars[0]).toMatchObject({
+      name: "TIMEOUT",
+      required: true,
+      defaultValue: "30",
+    });
   });
 
   test("no defaultValue when comment has no default:", () => {
@@ -404,7 +408,9 @@ describe("buildEnvContent", () => {
 
   test("preserves inline comments", () => {
     scaffold(tmpDir, { ".env": "PORT=9000\n" });
-    const sections = resolveVars(parseEnvExample("PORT=<number>  # number, unit: port\n"), [".env"]);
+    const sections = resolveVars(parseEnvExample("PORT=<number>  # number, unit: port\n"), [
+      ".env",
+    ]);
     const content = buildEnvContent(sections);
     expect(content).toContain("PORT=9000");
     expect(content).toContain("# number, unit: port");

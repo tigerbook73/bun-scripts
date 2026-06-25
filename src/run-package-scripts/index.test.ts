@@ -70,15 +70,15 @@ describe("parsePnpmWorkspace", () => {
   });
 
   test("skips negation patterns", () => {
-    expect(
-      parsePnpmWorkspace("packages:\n  - 'packages/*'\n  - '!**/test/**'\n"),
-    ).toEqual(["packages/*"]);
+    expect(parsePnpmWorkspace("packages:\n  - 'packages/*'\n  - '!**/test/**'\n")).toEqual([
+      "packages/*",
+    ]);
   });
 
   test("stops at next top-level key", () => {
-    expect(
-      parsePnpmWorkspace("packages:\n  - 'packages/*'\ncatalog:\n  react: ^18\n"),
-    ).toEqual(["packages/*"]);
+    expect(parsePnpmWorkspace("packages:\n  - 'packages/*'\ncatalog:\n  react: ^18\n")).toEqual([
+      "packages/*",
+    ]);
   });
 
   test("returns empty array when no packages key", () => {

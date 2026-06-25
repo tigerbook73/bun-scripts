@@ -41,7 +41,8 @@ export function resolveVars(sections: ExampleSection[], envFiles: string[]): Res
     vars: section.vars.map((v): ResolvedVar => {
       const entry = resolved.get(v.name);
       const value = entry?.value ?? null;
-      const typeValid = value === null || v.typeHint === null || validateTypeHint(value, v.typeHint);
+      const typeValid =
+        value === null || v.typeHint === null || validateTypeHint(value, v.typeHint);
       return { ...v, source: entry?.source ?? null, value, typeValid };
     }),
   }));

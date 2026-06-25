@@ -7,11 +7,13 @@
     "r": "src/run-package-scripts/index.ts"
   },
   "scripts": {
-    "lint": "eslint src/**/*.ts scripts/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts scripts/**/*.ts --fix",
-    "format": "prettier --write .",
+    "test": "bun test",
+    "format": "prettier --log-level warn --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "lint": "eslint src --fix",
+    "lint:check": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "verify": "bun --parallel lint format typecheck test"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -19,10 +21,8 @@
     "@typescript-eslint/parser": "^8.62.0",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.8.4"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
+    "prettier": "^3.8.4",
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "picocolors": "^1.1.1"

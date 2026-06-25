@@ -4,20 +4,21 @@ This is a collection of Bun-based developer CLI tools. Default to using Bun inst
 
 ## Commands
 
-- `bun run install:tools` — compile and symlink all tools defined in `tools.config.json`
 - `bun test` — run tests
-- `bun run lint` / `bun run lint:fix` — ESLint
+- `bun run lint` / `bun run lint:check` — ESLint (fix / check-only)
 - `bun run format` / `bun run format:check` — Prettier
 - `bun run typecheck` — type-check without emitting
+- `bun run verify` — run lint, format, typecheck, and tests in parallel
 
 ## Adding a New Tool
 
-1. Create `src/<tool-name>.ts` with a `#!/usr/bin/env -S bun` shebang.
-2. Add an entry to `tools.config.json`:
+1. Create `src/<tool-name>/index.ts` with a `#!/usr/bin/env -S bun` shebang.
+2. Add an entry to `package.json` `bin`:
    ```json
-   { "src": "src/<tool-name>.ts", "name": "<binary-name>", "dir": "~/.local/bin" }
+   "<binary-name>": "src/<tool-name>/index.ts"
    ```
-3. Run `bun run install:tools` to install.
+3. Add a `src/<tool-name>/README.md` documenting usage and options.
+4. Run `bun link` (once) to register the package globally.
 
 ## Bun Conventions
 

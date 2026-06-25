@@ -118,7 +118,11 @@ if (import.meta.main) {
     if (values.dump || values.output !== undefined) {
       return { kind: "dump", toStdout: values.dump ?? false, outputFile: values.output ?? null };
     }
-    return { kind: "check", display: activeCheck[0] ?? "verbose", noMask: values["no-mask"] ?? false };
+    return {
+      kind: "check",
+      display: activeCheck[0] ?? "verbose",
+      noMask: values["no-mask"] ?? false,
+    };
   })();
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -144,15 +148,29 @@ if (import.meta.main) {
 
   switch (mode.kind) {
     case "get": {
-      if (checker.hasMissing()) { checker.printSilent(); process.exit(1); }
-      if (checker.hasTypeErrors()) { checker.printMismatchOnly(); process.exit(1); }
-      const out = mode.json ? buildJsonOutput(sections, mode.keys) : buildGetOutput(sections, mode.keys);
+      if (checker.hasMissing()) {
+        checker.printSilent();
+        process.exit(1);
+      }
+      if (checker.hasTypeErrors()) {
+        checker.printMismatchOnly();
+        process.exit(1);
+      }
+      const out = mode.json
+        ? buildJsonOutput(sections, mode.keys)
+        : buildGetOutput(sections, mode.keys);
       if (out) console.log(out);
       process.exit(0);
     }
     case "dump": {
-      if (checker.hasMissing()) { checker.printSilent(); process.exit(1); }
-      if (checker.hasTypeErrors()) { checker.printMismatchOnly(); process.exit(1); }
+      if (checker.hasMissing()) {
+        checker.printSilent();
+        process.exit(1);
+      }
+      if (checker.hasTypeErrors()) {
+        checker.printMismatchOnly();
+        process.exit(1);
+      }
       const content = buildEnvContent(sections);
       if (mode.toStdout) process.stdout.write(content);
       if (mode.outputFile !== null) await Bun.write(mode.outputFile, content);
@@ -160,10 +178,18 @@ if (import.meta.main) {
     }
     case "check": {
       switch (mode.display) {
-        case "verbose": checker.printVerbose({ noMask: mode.noMask }); break;
-        case "quiet":   checker.printQuiet(); break;
-        case "silent":  checker.printSilent(); break;
-        case "mismatch": checker.printMismatchOnly(); break;
+        case "verbose":
+          checker.printVerbose({ noMask: mode.noMask });
+          break;
+        case "quiet":
+          checker.printQuiet();
+          break;
+        case "silent":
+          checker.printSilent();
+          break;
+        case "mismatch":
+          checker.printMismatchOnly();
+          break;
       }
       process.exit(checker.hasErrors() ? 1 : 0);
     }

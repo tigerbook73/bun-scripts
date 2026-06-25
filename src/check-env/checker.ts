@@ -69,7 +69,7 @@ export class EnvChecker {
       for (const v of section.vars) {
         const status = this.statusChar(v);
         const name = v.name.padEnd(maxKeyLen);
-        const rawVal = displayCache.get(v)!;
+        const rawVal = displayCache.get(v) ?? "";
         const truncatedRaw = truncate(rawVal, maxValLen);
         const paddedRaw = truncatedRaw.padEnd(maxValLen);
         const coloredVal = v.value !== null ? paddedRaw : color.muted(paddedRaw);
@@ -109,7 +109,10 @@ export class EnvChecker {
 
   printSilent(): void {
     const groups: [string[], string][] = [
-      [this.missingVars().map((v) => v.name), "The following required variables are not configured:"],
+      [
+        this.missingVars().map((v) => v.name),
+        "The following required variables are not configured:",
+      ],
       [this.typeErrorVars().map((v) => v.name), "The following variables fail type validation:"],
     ];
 
