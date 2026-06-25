@@ -3,5 +3,10 @@
     "src": "src/run-package-scripts.ts",
     "name": "r",
     "dir": "~/.local/bin"
+  },
+  {
+    "src": "src/check-env.ts",
+    "name": "check-env",
+    "dir": "~/.local/bin"
   }
 ]
