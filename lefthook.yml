@@ -1,0 +1,21 @@
+pre-commit:
+  piped: true
+  commands:
+    no-commit-to-main:
+      run: |
+        branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+        if [ "$branch" = "main" ]; then
+          echo "Error: direct commits to main branch are not allowed."
+          exit 1
+        fi
+    lint:
+      glob: "**/*.ts"
+      run: pnpm eslint --fix {staged_files}
+      stage_fixed: true
+    format:
+      run: pnpm prettier --write {staged_files}
+      stage_fixed: true
+    typecheck:
+      run: pnpm typecheck
+    test:
+      run: pnpm test
