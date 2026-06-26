@@ -21,9 +21,11 @@ npm install -g @tigerbook/run-scripts
 > **npm PATH note:** If `r` is not found after `npm install -g`, run `npm config get prefix` to find
 > the global bin directory and add `<prefix>/bin` to your `PATH`.
 
-**Requirements:** Node >= 22 or Bun >= 1.0 · [fzf](https://github.com/junegunn/fzf) on your PATH
+**Requirements:** Node >= 22 or Bun >= 1.0
 
-### Install fzf
+**Picker:** Uses [fzf](https://github.com/junegunn/fzf) when available, otherwise falls back to the built-in `@inquirer/search` interactive prompt — no extra setup needed.
+
+### Install fzf (optional, recommended)
 
 ```bash
 # macOS
@@ -41,7 +43,7 @@ winget install fzf
 ```bash
 cd your-project
 
-r          # open fzf — browse and run any script
+r          # open picker — browse and run any script
 r build    # filter to "build" scripts; runs directly if exactly one match
 r api/dev  # run the "dev" script in the "api" workspace package
 ```
@@ -49,10 +51,16 @@ r api/dev  # run the "dev" script in the "api" workspace package
 ## Usage
 
 ```bash
-r                    # open fzf picker with all scripts
+r                    # open picker with all scripts
 r <query>            # filter scripts; run directly if exactly one match
 r <query> -- <args>  # pass extra args to the matched script
 r --help             # show help
+```
+
+Before executing, `r` always prints the full command it will run:
+
+```
+Running: pnpm --filter @my/app run dev
 ```
 
 ## Monorepo support
