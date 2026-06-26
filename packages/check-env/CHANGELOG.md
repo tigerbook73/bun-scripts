@@ -1,5 +1,11 @@
 # @tigerbook/check-env
 
+## 0.2.2
+
+### Patch Changes
+
+- 68cd237: Normalize published package repository metadata and refresh npm-visible README formatting.
+
 ## 0.2.1
 
 ### Patch Changes

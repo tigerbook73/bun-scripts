@@ -1,5 +1,11 @@
 # @tigerbook/run-scripts
 
+## 0.2.3
+
+### Patch Changes
+
+- 68cd237: Normalize published package repository metadata and refresh npm-visible README formatting.
+
 ## 0.2.2
 
 ### Patch Changes
