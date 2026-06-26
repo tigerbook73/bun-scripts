@@ -1,5 +1,11 @@
 # @tigerbook/check-env
 
+## 0.2.4
+
+### Patch Changes
+
+- 330986b: Translate the `check-env explain` reference template to English and keep the published CLI bundle minified.
+
 ## 0.2.3
 
 ### Patch Changes
