@@ -87,7 +87,7 @@ async function main(): Promise<void> {
       const result = spawnSync(pm, args, { stdio: "inherit" });
       process.exit(result.status ?? 1);
     }
-    selected = await pick(list, query, pickerMode);
+    selected = (await pick(list, query, pickerMode, pm, scriptsMap)) ?? "";
   }
 
   if (selected) {
