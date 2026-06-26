@@ -77,7 +77,14 @@ In a single-package repo, scripts are listed without a prefix.
 
 ## Fallback behavior
 
-If the query matches no scripts, it is forwarded to the package manager as-is:
+If the first argument is a flag (starts with `-`), it is forwarded directly to the package manager without any script matching:
+
+```bash
+r --filter @scope/api dev   # → runs: pnpm --filter @scope/api dev
+r -D lodash                 # → runs: pnpm -D lodash
+```
+
+If the query matches no scripts, it is also forwarded to the package manager as-is:
 
 ```bash
 r tsc            # no script named "tsc" → runs: pnpm tsc
@@ -99,24 +106,26 @@ Must be run from the project root (directory containing `package.json`).
 
 ## Configuration
 
-`r` loads config from (local takes priority over global):
+Config is stored in `.bun-scripts/setting.toml` (local) and `~/.bun-scripts/setting.toml` (global). Local takes priority.
 
-- **Local**: `.bun-scripts/setting.json` in the project root
-- **Global**: `~/.bun-scripts/setting.json`
+Initialize with `r --config init`:
 
-### `setting.json` schema
-
-```json
-{
-  "run-scripts": {
-    "picker": "fzf"
-  }
-}
+```bash
+r --config init          # create local .bun-scripts/setting.toml
+r --config init --global # create ~/.bun-scripts/setting.toml
 ```
 
-| Field                | Values              | Default | Description                                                                                                                       |
-| -------------------- | ------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `run-scripts.picker` | `"fzf"` \| `"node"` | `"fzf"` | Preferred picker. `"fzf"` still falls back to `@inquirer/search` if fzf is not on PATH. `"node"` always uses the built-in prompt. |
+Then edit the file directly — TOML supports comments, so each option is documented inline:
+
+```toml
+[run-scripts]
+# Preferred picker: "fzf" (default, falls back to built-in if not on PATH) | "node" (always built-in)
+picker = "fzf"
+```
+
+| Field                | Values              | Default | Description                                                                                                                  |
+| -------------------- | ------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `run-scripts.picker` | `"fzf"` \| `"node"` | `"fzf"` | Preferred picker. `"fzf"` falls back to the built-in prompt if fzf is not on PATH. `"node"` always uses the built-in prompt. |
 
 ## License
 

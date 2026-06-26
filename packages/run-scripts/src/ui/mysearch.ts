@@ -264,7 +264,7 @@ export default createPrompt(
           let next = active;
           do {
             next = (next + offset + searchResults.length) % searchResults.length;
-          } while (!isSelectable(searchResults[next]!));
+          } while (!isSelectable(searchResults[next]!)); // next is always within [0, length) by the modulo above
           setActive(next);
         }
       } else {
