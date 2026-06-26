@@ -2,4 +2,4 @@
 "@tigerbook/run-scripts": minor
 ---
 
-Add `@inquirer/search` as interactive picker fallback when fzf is not available. Uses fuse.js for fuzzy matching in the inquirer picker. Always prints the full command before execution. Refactors source into focused modules (detect, collect, run, picker, config). Adds config file support (`~/.bun-scripts/setting.json` and `.bun-scripts/setting.json`) with `run-scripts.picker` option to prefer `"fzf"` or `"inquirer"`.
+Add built-in interactive picker fallback when fzf is not available. Uses a local fork of @inquirer/search with initialInput pre-fill and Escape-to-clear/cancel support. Always prints the full command before execution. Adds config file support (`~/.bun-scripts/setting.toml` and `.bun-scripts/setting.toml`) with `run-scripts.picker` option to prefer `"fzf"` or `"node"`.
