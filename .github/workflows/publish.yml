@@ -8,6 +8,7 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: npm
     permissions:
       id-token: write # Trusted Publishing
       contents: write # push version commits
