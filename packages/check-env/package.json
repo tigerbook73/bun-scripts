@@ -13,9 +13,23 @@
   },
   "keywords": [
     "env",
+    "environment",
+    "environment-variables",
+    "env-vars",
     "dotenv",
+    "dotenv-validator",
+    "env-validation",
+    "validate-env",
+    "env-check",
+    "config-validation",
+    "configuration",
     "cli",
+    "developer-tools",
+    "devtools",
+    "node",
     "bun",
+    "typescript",
+    "ci",
     "check-env"
   ],
   "bin": {
