@@ -1,15 +1,3 @@
-import { existsSync } from "node:fs";
-
-export type PackageManager = "pnpm" | "bun" | "yarn" | "npm";
-
-export function detectPackageManager(): PackageManager {
-  if (existsSync("pnpm-lock.yaml")) return "pnpm";
-  if (existsSync("bun.lock") || existsSync("bun.lockb")) return "bun";
-  if (existsSync("yarn.lock")) return "yarn";
-  if (existsSync("package-lock.json")) return "npm";
-  return "npm";
-}
-
 /** Minimal parser for pnpm-workspace.yaml — only needs the packages list */
 export function parsePnpmWorkspace(content: string): string[] {
   const patterns: string[] = [];
