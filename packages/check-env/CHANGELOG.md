@@ -1,5 +1,11 @@
 # @tigerbook/check-env
 
+## 0.2.3
+
+### Patch Changes
+
+- e315ec8: Infer number, boolean, and URL type hints from defaults and example values.
+
 ## 0.2.2
 
 ### Patch Changes
