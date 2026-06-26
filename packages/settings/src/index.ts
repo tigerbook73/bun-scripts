@@ -8,6 +8,11 @@ const SETTINGS_FILE = "setting.toml";
 
 export const GLOBAL_CONFIG_PATH = join(homedir(), SETTINGS_DIR, SETTINGS_FILE);
 
+/** Resolved at call time so HOME overrides in tests are respected. */
+export function getGlobalConfigPath(): string {
+  return join(process.env.HOME ?? homedir(), SETTINGS_DIR, SETTINGS_FILE);
+}
+
 /** Resolved at call time so CWD changes (e.g. process.chdir in tests) are respected. */
 export function getLocalConfigPath(): string {
   return join(process.cwd(), SETTINGS_DIR, SETTINGS_FILE);
@@ -50,7 +55,7 @@ function deepMerge(
 
 /** Load a tool's config section from merged global + local setting.toml. Local takes priority. */
 export function loadToolConfig<T extends object>(tool: string): Partial<T> {
-  const merged = deepMerge(readTomlFile(GLOBAL_CONFIG_PATH), readTomlFile(getLocalConfigPath()));
+  const merged = deepMerge(readTomlFile(getGlobalConfigPath()), readTomlFile(getLocalConfigPath()));
   return (merged[tool] ?? {}) as Partial<T>;
 }
 
@@ -76,7 +81,7 @@ function hasSection(path: string, tool: string): boolean {
 }
 
 export function initToolSection(isGlobal: boolean, tool: string, tomlContent: string): void {
-  const configPath = isGlobal ? GLOBAL_CONFIG_PATH : getLocalConfigPath();
+  const configPath = isGlobal ? getGlobalConfigPath() : getLocalConfigPath();
 
   if (hasSection(configPath, tool)) {
     console.log(`Config already exists: ${configPath} [${tool}]`);

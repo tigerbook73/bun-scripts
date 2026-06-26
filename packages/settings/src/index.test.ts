@@ -7,9 +7,9 @@
 
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "node:fs";
-import { tmpdir, homedir } from "node:os";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { GLOBAL_CONFIG_PATH, getLocalConfigPath, loadToolConfig, initToolSection } from "./index";
+import { getGlobalConfigPath, getLocalConfigPath, loadToolConfig, initToolSection } from "./index";
 
 function writeConfig(path: string, toml: string): void {
   mkdirSync(join(path, ".."), { recursive: true });
@@ -65,15 +65,25 @@ describe("getLocalConfigPath", () => {
  */
 describe("loadToolConfig", () => {
   let tmpDir: string;
+  let homeDir: string;
   const originalCwd = process.cwd();
+  const originalHome = process.env.HOME;
 
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), "s-load-test-"));
+    homeDir = join(tmpDir, "home");
+    mkdirSync(homeDir);
+    process.env.HOME = homeDir;
     process.chdir(tmpDir);
   });
 
   afterEach(() => {
     process.chdir(originalCwd);
+    if (originalHome === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = originalHome;
+    }
     rmSync(tmpDir, { recursive: true });
   });
 
@@ -92,37 +102,25 @@ describe("loadToolConfig", () => {
   });
 
   test("reads tool section from global config", () => {
-    writeConfig(GLOBAL_CONFIG_PATH, `[my-tool]\nfoo = "global"\n`);
-    try {
-      expect(loadToolConfig<{ foo: string }>("my-tool")).toEqual({ foo: "global" });
-    } finally {
-      rmSync(GLOBAL_CONFIG_PATH);
-    }
+    writeConfig(getGlobalConfigPath(), `[my-tool]\nfoo = "global"\n`);
+    expect(loadToolConfig<{ foo: string }>("my-tool")).toEqual({ foo: "global" });
   });
 
   test("local config takes priority over global for the same key", () => {
-    writeConfig(GLOBAL_CONFIG_PATH, `[my-tool]\nfoo = "global"\n`);
+    writeConfig(getGlobalConfigPath(), `[my-tool]\nfoo = "global"\n`);
     writeConfig(join(tmpDir, ".bun-scripts", "setting.toml"), `[my-tool]\nfoo = "local"\n`);
-    try {
-      expect(loadToolConfig<{ foo: string }>("my-tool").foo).toBe("local");
-    } finally {
-      rmSync(GLOBAL_CONFIG_PATH);
-    }
+    expect(loadToolConfig<{ foo: string }>("my-tool").foo).toBe("local");
   });
 
   test("deep merges nested objects from global and local configs", () => {
-    writeConfig(GLOBAL_CONFIG_PATH, `[my-tool.nested]\na = "from-global"\nb = "from-global"\n`);
+    writeConfig(getGlobalConfigPath(), `[my-tool.nested]\na = "from-global"\nb = "from-global"\n`);
     writeConfig(
       join(tmpDir, ".bun-scripts", "setting.toml"),
       `[my-tool.nested]\nb = "from-local"\n`,
     );
-    try {
-      const config = loadToolConfig<{ nested: { a: string; b: string } }>("my-tool");
-      expect(config.nested?.a).toBe("from-global");
-      expect(config.nested?.b).toBe("from-local");
-    } finally {
-      rmSync(GLOBAL_CONFIG_PATH);
-    }
+    const config = loadToolConfig<{ nested: { a: string; b: string } }>("my-tool");
+    expect(config.nested?.a).toBe("from-global");
+    expect(config.nested?.b).toBe("from-local");
   });
 
   test("returns empty object when config file contains invalid TOML", () => {
@@ -147,15 +145,25 @@ describe("loadToolConfig", () => {
  */
 describe("initToolSection", () => {
   let tmpDir: string;
+  let homeDir: string;
   const originalCwd = process.cwd();
+  const originalHome = process.env.HOME;
 
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), "s-init-test-"));
+    homeDir = join(tmpDir, "home");
+    mkdirSync(homeDir);
+    process.env.HOME = homeDir;
     process.chdir(tmpDir);
   });
 
   afterEach(() => {
     process.chdir(originalCwd);
+    if (originalHome === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = originalHome;
+    }
     rmSync(tmpDir, { recursive: true });
   });
 
@@ -196,16 +204,12 @@ describe("initToolSection", () => {
   });
 
   test("does not create .gitignore when initializing global config", () => {
-    const globalGitignore = join(homedir(), ".bun-scripts", ".gitignore");
+    const globalGitignore = join(homeDir, ".bun-scripts", ".gitignore");
     const hadGitignore = existsSync(globalGitignore);
-    writeConfig(GLOBAL_CONFIG_PATH, `[other-tool]\nkey = "val"\n`);
-    try {
-      initToolSection(true, "my-tool", `[my-tool]\nfoo = "bar"\n`);
-      if (!hadGitignore) {
-        expect(existsSync(globalGitignore)).toBe(false);
-      }
-    } finally {
-      rmSync(GLOBAL_CONFIG_PATH);
+    writeConfig(getGlobalConfigPath(), `[other-tool]\nkey = "val"\n`);
+    initToolSection(true, "my-tool", `[my-tool]\nfoo = "bar"\n`);
+    if (!hadGitignore) {
+      expect(existsSync(globalGitignore)).toBe(false);
     }
   });
 
