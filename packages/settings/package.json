@@ -7,11 +7,12 @@
   "author": "tigerbook",
   "exports": "./src/index.ts",
   "scripts": {
-    "format": "prettier --log-level warn --write .",
-    "format:check": "prettier --check .",
     "lint": "eslint src --fix",
     "lint:check": "eslint src",
-    "typecheck": "tsc --noEmit"
+    "format": "prettier --log-level warn --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
   },
   "dependencies": {
     "smol-toml": "^1.7.0"
