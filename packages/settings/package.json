@@ -1,6 +1,7 @@
 {
   "name": "@tigerbook/settings",
   "version": "0.1.0",
+  "private": true,
   "type": "module",
   "description": "Shared config file management for bun-scripts tools",
   "license": "MIT",
