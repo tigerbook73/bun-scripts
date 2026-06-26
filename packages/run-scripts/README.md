@@ -75,7 +75,7 @@ root/lint       → "lint" script at the repo root
 
 In a single-package repo, scripts are listed without a prefix.
 
-![fzf picker with command preview](./assets/fzf-snapshot.png)
+<img src="./assets/fzf-snapshot.png" width="600" alt="fzf picker with command preview" />
 
 ## Fallback behavior
 
