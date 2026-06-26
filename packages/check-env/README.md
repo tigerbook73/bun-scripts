@@ -133,8 +133,6 @@ Check modes:
   -q, --quiet           Symbol + key name only
   -s, --silent          No output on success; list errors on failure
   -m, --mismatch        List only missing vars and type errors
-
-Modifiers:
   --no-mask             Show secret values unmasked
 
 get:

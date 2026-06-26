@@ -12,7 +12,7 @@
     "build": "pnpm -r build",
     "bun-link": "pnpm -r exec bun link",
     "changeset": "changeset",
-    "verify": "pnpm -r --parallel lint && pnpm format&& pnpm -r --parallel typecheck && pnpm -r --parallel test",
+    "verify": "pnpm lint && pnpm format && pnpm typecheck && pnpm test && pnpm build",
     "prepare": "lefthook install"
   },
   "devDependencies": {
