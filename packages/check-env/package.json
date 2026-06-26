@@ -8,7 +8,7 @@
   "homepage": "https://github.com/tigerbook73/bun-scripts/tree/main/packages/check-env#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tigerbook73/bun-scripts",
+    "url": "git+https://github.com/tigerbook73/bun-scripts.git",
     "directory": "packages/check-env"
   },
   "keywords": [
