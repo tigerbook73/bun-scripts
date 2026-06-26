@@ -75,6 +75,8 @@ root/lint       → "lint" script at the repo root
 
 In a single-package repo, scripts are listed without a prefix.
 
+![fzf picker with command preview](https://raw.githubusercontent.com/tigerbook73/bun-scripts/main/packages/run-scripts/assets/fzf-snapshot.png)
+
 ## Fallback behavior
 
 If the first argument is a flag (starts with `-`), it is forwarded directly to the package manager without any script matching:
