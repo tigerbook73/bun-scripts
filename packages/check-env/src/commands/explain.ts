@@ -65,13 +65,18 @@ REQUIRED_WITH_DEFAULT=5432
 # 类型提示
 # ────────────────────────────────────────
 
-# value 位置写 <type> 作为类型标记
+# value 位置写 <type> 作为类型标记，也可从 default 或示例值推断
 PORT=<number>
 ENABLE_FEATURE=<boolean>
 API_ENDPOINT=<url>
 
-# 也可通过 inline 注释说明类型和默认值
+# number / boolean / url 会自动推断；普通字符串不推断类型
+PORT=5432
+FEATURE_FLAG=false
+PUBLIC_URL=https://example.com
+
 # default: X 表示应用内部有兜底值，未配置不报错
+# 也可通过 inline 注释说明单位和默认值
 TIMEOUT=30    # number, unit: seconds, default: 30
 
 # ────────────────────────────────────────
