@@ -43,7 +43,8 @@
     "bun": ">=1.0.0"
   },
   "files": [
-    "dist"
+    "dist",
+    "assets"
   ],
   "scripts": {
     "build": "bun build src/index.ts --outfile dist/index.js --target node --minify && sed -i '1s|.*|#!/usr/bin/env node|' dist/index.js && chmod +x dist/index.js",
