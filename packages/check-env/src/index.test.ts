@@ -350,8 +350,39 @@ describe("parseEnvExample", () => {
     expect(sections[0]!.vars[0]!.typeHint).toBeNull();
   });
 
-  test("typeHint is null for plain values", () => {
+  test("infers number typeHint from plain numeric values", () => {
     const sections = parseEnvExample("DB_PORT=5432\n");
+    expect(sections[0]!.vars[0]!.typeHint).toBe("number");
+  });
+
+  test("infers 0 and 1 as number rather than boolean", () => {
+    const sections = parseEnvExample("MIN=0\nMAX=1\n");
+    expect(sections[0]!.vars[0]!.typeHint).toBe("number");
+    expect(sections[0]!.vars[1]!.typeHint).toBe("number");
+  });
+
+  test("infers number typeHint from defaultValue", () => {
+    const sections = parseEnvExample("TIMEOUT=    # default: 30\n");
+    expect(sections[0]!.vars[0]!.typeHint).toBe("number");
+  });
+
+  test("infers boolean typeHint from defaultValue", () => {
+    const sections = parseEnvExample("FEATURE_FLAG=    # default: false\n");
+    expect(sections[0]!.vars[0]!.typeHint).toBe("boolean");
+  });
+
+  test("infers url typeHint from defaultValue", () => {
+    const sections = parseEnvExample("API_URL=    # default: https://example.com\n");
+    expect(sections[0]!.vars[0]!.typeHint).toBe("url");
+  });
+
+  test("explicit typeHint takes precedence over inferred defaultValue", () => {
+    const sections = parseEnvExample("ID=<number>    # default: false\n");
+    expect(sections[0]!.vars[0]!.typeHint).toBe("number");
+  });
+
+  test("typeHint is null for non-typed plain values", () => {
+    const sections = parseEnvExample("LOG_LEVEL=info\n");
     expect(sections[0]!.vars[0]!.typeHint).toBeNull();
   });
 

@@ -23,6 +23,7 @@ const ACTIVE_KEY_RE = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/;
 const OPTIONAL_KEY_RE = /^#\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)$/;
 const DEFAULT_VAL_RE = /\bdefault:\s*(\S+)/;
 const TYPE_HINT_VALUE_RE = /^<(\w+)>$/;
+const BOOLEAN_LITERALS = new Set(["true", "false", "yes", "no"]);
 
 /**
  * Extracts `default: X` from the inline comment portion of a raw value string.
@@ -46,16 +47,33 @@ function extractInlineComment(raw: string): string | null {
   return raw.slice(hashIdx + 1).trim() || null;
 }
 
+function inferTypeHint(value: string | null): string | null {
+  if (value === null) return null;
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+  if (BOOLEAN_LITERALS.has(trimmed.toLowerCase())) return "boolean";
+  if (!isNaN(Number(trimmed))) return "number";
+  try {
+    new URL(trimmed);
+    return "url";
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Extracts type hint from the value position, e.g. `<number>` → `"number"`.
- * Returns null for `<secret>` (handled separately) and non-hint values.
+ * If no explicit marker is present, infers from `default: X` first, then the
+ * example value.
  */
-function extractTypeHint(rawValue: string): string | null {
+function extractTypeHint(rawValue: string, defaultValue: string | null): string | null {
   const value = stripInlineComment(rawValue).trim();
   const match = TYPE_HINT_VALUE_RE.exec(value);
-  if (!match) return null;
-  const hint = (match[1] ?? "").toLowerCase();
-  return hint === "secret" ? null : hint;
+  if (match) {
+    const hint = (match[1] ?? "").toLowerCase();
+    return hint === "secret" ? null : hint;
+  }
+  return inferTypeHint(defaultValue) ?? inferTypeHint(value);
 }
 
 /** Strips inline comment and surrounding whitespace from a raw value string. */
@@ -124,6 +142,7 @@ export function parseEnvExample(content: string): ExampleSection[] {
       if (match) {
         const name = match[1] ?? "";
         const rawValue = match[2] ?? "";
+        const defaultValue = extractDefaultValue(rawValue);
         if (seenNames.has(name)) {
           console.error(`Warning: duplicate key "${name}" in .env.example — skipping duplicate`);
           continue;
@@ -133,10 +152,10 @@ export function parseEnvExample(content: string): ExampleSection[] {
           name,
           required: true,
           exampleValue: null,
-          defaultValue: extractDefaultValue(rawValue),
+          defaultValue,
           isSecret: isSecret(name, stripInlineComment(rawValue)),
           inlineComment: extractInlineComment(rawValue),
-          typeHint: extractTypeHint(rawValue),
+          typeHint: extractTypeHint(rawValue, defaultValue),
         });
         continue;
       }
@@ -145,16 +164,17 @@ export function parseEnvExample(content: string): ExampleSection[] {
         const name = match[1] ?? "";
         const rawValue = match[2] ?? "";
         const exampleValue = stripInlineComment(rawValue) || null;
+        const defaultValue = extractDefaultValue(rawValue);
         if (seenNames.has(name)) continue; // commented alternative — silently skip
         seenNames.add(name);
         vars.push({
           name,
           required: false,
           exampleValue,
-          defaultValue: extractDefaultValue(rawValue),
+          defaultValue,
           isSecret: isSecret(name, exampleValue),
           inlineComment: extractInlineComment(rawValue),
-          typeHint: extractTypeHint(rawValue),
+          typeHint: extractTypeHint(rawValue, defaultValue),
         });
       }
     }

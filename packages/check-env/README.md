@@ -97,17 +97,19 @@ check-env explain
 ```bash
 # ── Database ──────────────────────────────
 DB_HOST=                         # required
-DB_PORT=5432                     # required, example value for reference
+DB_PORT=5432                     # required, inferred and validated as number
 PORT=<number>                    # required, validated as number at runtime
 API_URL=<url>                    # required, validated as URL
 STRIPE_SK=<secret>               # required, masked in output
 API_KEY=                         # auto-detected as secret by name (KEY/TOKEN/SECRET/PASSWORD)
-TIMEOUT=30  # number, default: 30  # app has built-in default — not reported as missing
+TIMEOUT=30  # default: 30          # default is inferred as number; not reported as missing
 
 # Optional variables (commented out = not required)
 # FEATURE_FLAG=false
 # WEBHOOK_URL=<url>
 ```
+
+Types are inferred from explicit `<number>` / `<boolean>` / `<url>` markers first, then from `default: X`, then from numeric, boolean, or URL example values. Plain strings are not assigned a type.
 
 Run `check-env explain` for a full annotated reference.
 
