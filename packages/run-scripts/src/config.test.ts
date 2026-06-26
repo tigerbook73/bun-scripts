@@ -49,19 +49,19 @@ describe("loadConfig", () => {
 
   test("reads local config when only local config exists", () => {
     writeConfig(join(tmpDir, ".bun-scripts", "setting.json"), {
-      "run-scripts": { picker: "inquirer" },
+      "run-scripts": { picker: "node" },
     });
     const config = loadConfig();
-    expect(config["run-scripts"]?.picker).toBe("inquirer");
+    expect(config["run-scripts"]?.picker).toBe("node");
   });
 
   test("reads global config when only global config exists", () => {
     writeConfig(join(homedir(), ".bun-scripts", "setting.json"), {
-      "run-scripts": { picker: "inquirer" },
+      "run-scripts": { picker: "node" },
     });
     try {
       const config = loadConfig();
-      expect(config["run-scripts"]?.picker).toBe("inquirer");
+      expect(config["run-scripts"]?.picker).toBe("node");
     } finally {
       rmSync(join(homedir(), ".bun-scripts", "setting.json"));
     }
@@ -72,11 +72,11 @@ describe("loadConfig", () => {
       "run-scripts": { picker: "fzf" },
     });
     writeConfig(join(tmpDir, ".bun-scripts", "setting.json"), {
-      "run-scripts": { picker: "inquirer" },
+      "run-scripts": { picker: "node" },
     });
     try {
       const config = loadConfig();
-      expect(config["run-scripts"]?.picker).toBe("inquirer");
+      expect(config["run-scripts"]?.picker).toBe("node");
     } finally {
       rmSync(join(homedir(), ".bun-scripts", "setting.json"));
     }
@@ -105,7 +105,7 @@ describe("getPickerMode", () => {
   });
 
   test("returns inquirer when picker is set to inquirer", () => {
-    expect(getPickerMode({ "run-scripts": { picker: "inquirer" } })).toBe("inquirer");
+    expect(getPickerMode({ "run-scripts": { picker: "node" } })).toBe("node");
   });
 
   test("returns fzf when picker is explicitly set to fzf", () => {
@@ -159,10 +159,10 @@ describe("initSetting", () => {
     mkdirSync(join(tmpDir, ".bun-scripts"), { recursive: true });
     writeFileSync(
       join(tmpDir, ".bun-scripts", "setting.json"),
-      JSON.stringify({ "run-scripts": { picker: "inquirer" } }),
+      JSON.stringify({ "run-scripts": { picker: "node" } }),
     );
     initSetting(false);
     const config = JSON.parse(readFileSync(join(tmpDir, ".bun-scripts", "setting.json"), "utf8"));
-    expect(config["run-scripts"]?.picker).toBe("inquirer");
+    expect(config["run-scripts"]?.picker).toBe("node");
   });
 });

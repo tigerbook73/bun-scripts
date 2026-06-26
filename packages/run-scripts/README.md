@@ -114,9 +114,9 @@ Must be run from the project root (directory containing `package.json`).
 }
 ```
 
-| Field                | Values                  | Default | Description                                                                                                                           |
-| -------------------- | ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `run-scripts.picker` | `"fzf"` \| `"inquirer"` | `"fzf"` | Preferred picker. `"fzf"` still falls back to `@inquirer/search` if fzf is not on PATH. `"inquirer"` always uses the built-in prompt. |
+| Field                | Values              | Default | Description                                                                                                                       |
+| -------------------- | ------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `run-scripts.picker` | `"fzf"` \| `"node"` | `"fzf"` | Preferred picker. `"fzf"` still falls back to `@inquirer/search` if fzf is not on PATH. `"node"` always uses the built-in prompt. |
 
 ## License
 

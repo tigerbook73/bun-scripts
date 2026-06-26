@@ -57,7 +57,7 @@ Options:
 
 Picker:
   Uses fzf if available, otherwise falls back to @inquirer/search
-  Configure preferred picker via setting.json: { "run-scripts": { "picker": "fzf" | "inquirer" } }
+  Configure preferred picker via setting.json: { "run-scripts": { "picker": "fzf" | "node" } }
 `);
 }
 

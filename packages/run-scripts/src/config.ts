@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-export type PickerMode = "fzf" | "inquirer";
+export type PickerMode = "fzf" | "node";
 
 export interface RunScriptsConfig {
   picker?: PickerMode;
