@@ -23,7 +23,7 @@ npm install -g @tigerbook/run-scripts
 
 **Requirements:** Node >= 22 or Bun >= 1.0
 
-**Picker:** Uses [fzf](https://github.com/junegunn/fzf) when available, otherwise falls back to the built-in `@inquirer/search` interactive prompt — no extra setup needed.
+**Picker:** Uses [fzf](https://github.com/junegunn/fzf) when available (with command preview), otherwise falls back to the built-in interactive prompt — no extra setup needed.
 
 ### Install fzf (optional, recommended)
 
@@ -43,7 +43,7 @@ winget install fzf
 ```bash
 cd your-project
 
-r          # open picker — browse and run any script
+r          # open picker — browse and run any script (fzf shows full command in preview)
 r build    # filter to "build" scripts; runs directly if exactly one match
 r api/dev  # run the "dev" script in the "api" workspace package
 ```

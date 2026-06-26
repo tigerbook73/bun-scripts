@@ -42,17 +42,26 @@ export class PickerService implements IPickerService {
   }
 
   private pickWithFzf(candidates: PickerCandidate[], query: string): string {
-    const fzf = spawnSync("fzf", ["--query", query], {
-      input: candidates.map((c) => c.name).join("\n"),
-      stdio: ["pipe", "pipe", "inherit"],
-      encoding: "utf8",
-    });
+    const input = candidates.map((c) => `${c.name}\t${c.description}`).join("\n");
+
+    const fzf = spawnSync(
+      "fzf",
+      [
+        `--query=${query}`,
+        "--delimiter=\t",
+        "--with-nth=1",
+        "--preview=echo {2..}",
+        "--preview-window=bottom:1:wrap",
+      ],
+      { input, stdio: ["pipe", "pipe", "inherit"], encoding: "utf8" },
+    );
 
     if (fzf.status !== 0) {
       throw new CliExitError("", fzf.status ?? 1, true);
     }
 
-    return (fzf.stdout as string).trim();
+    // output is "name\tdescription", return only the name
+    return (fzf.stdout as string).trim().split("\t")[0] ?? "";
   }
 
   private async pickWithInquirer(
