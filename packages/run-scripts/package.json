@@ -1,6 +1,6 @@
 {
   "name": "@tigerbook/run-scripts",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "description": "Fuzzy package script selector for npm/pnpm/yarn/bun workspaces",
   "license": "MIT",

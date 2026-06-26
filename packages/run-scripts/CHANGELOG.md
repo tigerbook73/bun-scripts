@@ -1,5 +1,11 @@
 # @tigerbook/run-scripts
 
+## 0.3.1
+
+### Patch Changes
+
+- 46a644b: Remove the private workspace settings package from published runtime dependencies so global installs resolve from npm.
+
 ## 0.3.0
 
 ### Minor Changes
