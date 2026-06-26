@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -40,4 +40,34 @@ export function loadConfig(): Config {
 
 export function getPickerMode(config: Config): PickerMode {
   return config["run-scripts"]?.picker ?? "fzf";
+}
+
+const DEFAULT_CONFIG: Config = {
+  "run-scripts": {
+    picker: "fzf",
+  },
+};
+
+/**
+ * Creates a config file at the global or local path.
+ * Local also writes a .gitignore to prevent the directory from being committed.
+ */
+export function initSetting(isGlobal: boolean): void {
+  const dir = isGlobal ? join(homedir(), ".bun-scripts") : ".bun-scripts";
+  const configPath = join(dir, "setting.json");
+
+  if (existsSync(configPath)) {
+    console.log(`Config already exists: ${configPath}`);
+    return;
+  }
+
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2) + "\n");
+  console.log(`Created: ${configPath}`);
+
+  if (!isGlobal) {
+    const gitignorePath = join(dir, ".gitignore");
+    writeFileSync(gitignorePath, "*\n");
+    console.log(`Created: ${gitignorePath}`);
+  }
 }

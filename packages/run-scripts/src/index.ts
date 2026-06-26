@@ -26,7 +26,7 @@ import { detectPackageManager, fuzzyMatch } from "./detect";
 import { collectScripts } from "./collect";
 import { execute } from "./run";
 import { pick } from "./picker";
-import { loadConfig, getPickerMode } from "./config";
+import { loadConfig, getPickerMode, initSetting } from "./config";
 
 // Re-export public API used by tests
 export { fuzzyMatch, parsePnpmWorkspace, detectPackageManager } from "./detect";
@@ -51,10 +51,13 @@ Script naming in monorepos:
   root/lint          Script "lint" at the repo root
 
 Options:
-  -h, --help         Show this help message
+  -h, --help              Show this help message
+  --init-setting          Create local config (.bun-scripts/setting.json)
+  --init-setting --global Create global config (~/.bun-scripts/setting.json)
 
 Picker:
   Uses fzf if available, otherwise falls back to @inquirer/search
+  Configure preferred picker via setting.json: { "run-scripts": { "picker": "fzf" | "inquirer" } }
 `);
 }
 
@@ -93,9 +96,13 @@ async function main(): Promise<void> {
 }
 
 if (import.meta.main) {
-  const arg = process.argv[2];
-  if (arg === "--help" || arg === "-h") {
+  const args = process.argv.slice(2);
+  if (args.includes("--help") || args.includes("-h")) {
     printHelp();
+    process.exit(0);
+  }
+  if (args.includes("--init-setting")) {
+    initSetting(args.includes("--global"));
     process.exit(0);
   }
   main().catch((err) => {
