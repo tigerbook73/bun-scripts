@@ -1,0 +1,19 @@
+{
+  "name": "@tigerbook/settings",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Shared config file management for bun-scripts tools",
+  "license": "MIT",
+  "author": "tigerbook",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "format": "prettier --log-level warn --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint src --fix",
+    "lint:check": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "smol-toml": "^1.7.0"
+  }
+}
