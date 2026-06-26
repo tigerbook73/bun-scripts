@@ -13,10 +13,20 @@
   },
   "keywords": [
     "scripts",
+    "npm-scripts",
+    "script-runner",
+    "fuzzy",
+    "fuzzy-search",
     "fzf",
+    "picker",
+    "interactive",
     "cli",
-    "bun",
-    "workspace"
+    "monorepo",
+    "workspace",
+    "npm",
+    "pnpm",
+    "yarn",
+    "bun"
   ],
   "bin": {
     "r": "src/index.ts"
@@ -36,11 +46,17 @@
     "dist"
   ],
   "scripts": {
-    "build": "bun build src/index.ts --outfile dist/index.js --target node && sed -i '1s|.*|#!/usr/bin/env node|' dist/index.js && chmod +x dist/index.js",
+    "build": "bun build src/index.ts --outfile dist/index.js --target node --minify && sed -i '1s|.*|#!/usr/bin/env node|' dist/index.js && chmod +x dist/index.js",
     "prepack": "bun run build",
     "test": "bun test",
     "lint": "eslint src --fix",
     "lint:check": "eslint src",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tigerbook/settings": "workspace:*",
+    "@inquirer/core": "^11.2.1",
+    "@inquirer/figures": "^2.0.7",
+    "@inquirer/type": "^4.0.7"
   }
 }

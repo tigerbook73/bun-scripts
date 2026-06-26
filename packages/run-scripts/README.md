@@ -21,9 +21,11 @@ npm install -g @tigerbook/run-scripts
 > **npm PATH note:** If `r` is not found after `npm install -g`, run `npm config get prefix` to find
 > the global bin directory and add `<prefix>/bin` to your `PATH`.
 
-**Requirements:** Node >= 22 or Bun >= 1.0 · [fzf](https://github.com/junegunn/fzf) on your PATH
+**Requirements:** Node >= 22 or Bun >= 1.0
 
-### Install fzf
+**Picker:** Uses [fzf](https://github.com/junegunn/fzf) when available (with command preview), otherwise falls back to the built-in interactive prompt — no extra setup needed.
+
+### Install fzf (optional, recommended)
 
 ```bash
 # macOS
@@ -41,7 +43,7 @@ winget install fzf
 ```bash
 cd your-project
 
-r          # open fzf — browse and run any script
+r          # open picker — browse and run any script (fzf shows full command in preview)
 r build    # filter to "build" scripts; runs directly if exactly one match
 r api/dev  # run the "dev" script in the "api" workspace package
 ```
@@ -49,10 +51,16 @@ r api/dev  # run the "dev" script in the "api" workspace package
 ## Usage
 
 ```bash
-r                    # open fzf picker with all scripts
+r                    # open picker with all scripts
 r <query>            # filter scripts; run directly if exactly one match
 r <query> -- <args>  # pass extra args to the matched script
 r --help             # show help
+```
+
+Before executing, `r` always prints the full command it will run:
+
+```
+Running: pnpm --filter @my/app run dev
 ```
 
 ## Monorepo support
@@ -67,9 +75,18 @@ root/lint       → "lint" script at the repo root
 
 In a single-package repo, scripts are listed without a prefix.
 
+<img src="./assets/fzf-snapshot.png" width="600" alt="fzf picker with command preview" />
+
 ## Fallback behavior
 
-If the query matches no scripts, it is forwarded to the package manager as-is:
+If the first argument is a flag (starts with `-`), it is forwarded directly to the package manager without any script matching:
+
+```bash
+r --filter @scope/api dev   # → runs: pnpm --filter @scope/api dev
+r -D lodash                 # → runs: pnpm -D lodash
+```
+
+If the query matches no scripts, it is also forwarded to the package manager as-is:
 
 ```bash
 r tsc            # no script named "tsc" → runs: pnpm tsc
@@ -88,6 +105,29 @@ r add lodash     # → runs: pnpm add lodash
 | `package-lock.json` | npm             |
 
 Must be run from the project root (directory containing `package.json`).
+
+## Configuration
+
+Config is stored in `.bun-scripts/setting.toml` (local) and `~/.bun-scripts/setting.toml` (global). Local takes priority.
+
+Initialize with `r --config init`:
+
+```bash
+r --config init          # create local .bun-scripts/setting.toml
+r --config init --global # create ~/.bun-scripts/setting.toml
+```
+
+Then edit the file directly — TOML supports comments, so each option is documented inline:
+
+```toml
+[run-scripts]
+# Preferred picker: "fzf" (default, falls back to built-in if not on PATH) | "node" (always built-in)
+picker = "fzf"
+```
+
+| Field                | Values              | Default | Description                                                                                                                  |
+| -------------------- | ------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `run-scripts.picker` | `"fzf"` \| `"node"` | `"fzf"` | Preferred picker. `"fzf"` falls back to the built-in prompt if fzf is not on PATH. `"node"` always uses the built-in prompt. |
 
 ## License
 
