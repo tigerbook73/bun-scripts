@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import search from "@inquirer/search";
 import { ExitPromptError } from "@inquirer/core";
 import Fuse from "fuse.js";
+import type { PickerMode } from "./config";
 
 export function hasFzf(): boolean {
   return spawnSync("which", ["fzf"], { stdio: "ignore" }).status === 0;
@@ -35,8 +36,12 @@ async function pickWithInquirer(candidates: string[], query: string): Promise<st
   });
 }
 
-export async function pick(candidates: string[], query: string): Promise<string> {
-  if (hasFzf()) {
+export async function pick(
+  candidates: string[],
+  query: string,
+  mode: PickerMode = "fzf",
+): Promise<string> {
+  if (mode === "fzf" && hasFzf()) {
     return pickWithFzf(candidates, query);
   }
   try {

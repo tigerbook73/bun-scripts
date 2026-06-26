@@ -97,6 +97,27 @@ r add lodash     # → runs: pnpm add lodash
 
 Must be run from the project root (directory containing `package.json`).
 
+## Configuration
+
+`r` loads config from (local takes priority over global):
+
+- **Local**: `.bun-scripts/setting.json` in the project root
+- **Global**: `~/.bun-scripts/setting.json`
+
+### `setting.json` schema
+
+```json
+{
+  "run-scripts": {
+    "picker": "fzf"
+  }
+}
+```
+
+| Field                | Values                  | Default | Description                                                                                                                           |
+| -------------------- | ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `run-scripts.picker` | `"fzf"` \| `"inquirer"` | `"fzf"` | Preferred picker. `"fzf"` still falls back to `@inquirer/search` if fzf is not on PATH. `"inquirer"` always uses the built-in prompt. |
+
 ## License
 
 MIT

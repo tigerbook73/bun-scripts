@@ -26,6 +26,7 @@ import { detectPackageManager, fuzzyMatch } from "./detect";
 import { collectScripts } from "./collect";
 import { execute } from "./run";
 import { pick } from "./picker";
+import { loadConfig, getPickerMode } from "./config";
 
 // Re-export public API used by tests
 export { fuzzyMatch, parsePnpmWorkspace, detectPackageManager } from "./detect";
@@ -58,6 +59,8 @@ Picker:
 }
 
 async function main(): Promise<void> {
+  const config = loadConfig();
+  const pickerMode = getPickerMode(config);
   const pm = detectPackageManager();
   const query = process.argv[2] ?? "";
   const extra = process.argv.slice(3);
@@ -81,7 +84,7 @@ async function main(): Promise<void> {
       const result = spawnSync(pm, args, { stdio: "inherit" });
       process.exit(result.status ?? 1);
     }
-    selected = await pick(candidates, query);
+    selected = await pick(list, query, pickerMode);
   }
 
   if (selected) {
