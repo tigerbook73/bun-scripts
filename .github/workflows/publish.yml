@@ -8,7 +8,6 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
-    environment: npm
     permissions:
       id-token: write # Trusted Publishing
       contents: write # push version commits
@@ -21,11 +20,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: "https://registry.npmjs.org"
-
-      - name: Upgrade npm
-        run: npm install -g npm@latest
 
       - uses: oven-sh/setup-bun@v2
         with:
