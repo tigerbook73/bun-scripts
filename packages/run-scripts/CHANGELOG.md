@@ -1,5 +1,11 @@
 # @tigerbook/run-scripts
 
+## 0.3.2
+
+### Patch Changes
+
+- 26a6896: Include README image assets in the published package so npm-rendered documentation stays versioned with the release.
+
 ## 0.3.1
 
 ### Patch Changes
