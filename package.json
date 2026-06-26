@@ -11,6 +11,7 @@
     "typecheck": "pnpm -r typecheck",
     "build": "pnpm -r build",
     "bun-link": "pnpm -r exec bun link",
+    "bun-unlink": "pnpm -r exec bun unlink",
     "changeset": "changeset",
     "verify": "pnpm lint && pnpm format && pnpm typecheck && pnpm test && pnpm build",
     "prepare": "lefthook install"
