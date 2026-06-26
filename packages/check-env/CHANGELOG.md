@@ -1,5 +1,11 @@
 # @tigerbook/check-env
 
+## 0.2.5
+
+### Patch Changes
+
+- 26a6896: Expand npm keywords to improve package discoverability.
+
 ## 0.2.4
 
 ### Patch Changes
