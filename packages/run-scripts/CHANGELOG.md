@@ -1,5 +1,11 @@
 # @tigerbook/run-scripts
 
+## 0.4.0
+
+### Minor Changes
+
+- 29d67a0: Add `-p`/`--print-command` to resolve and print the command that would run without executing it. Replace `r --config init` with `r --init-config`, and parse `r` options only before the query. Also remove the special case that forwarded commands directly to the package manager when the first argument started with `-`.
+
 ## 0.3.2
 
 ### Patch Changes
