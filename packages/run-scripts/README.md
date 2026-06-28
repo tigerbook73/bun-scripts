@@ -51,16 +51,23 @@ r api/dev  # run the "dev" script in the "api" workspace package
 ## Usage
 
 ```bash
-r                    # open picker with all scripts
-r <query>            # filter scripts; run directly if exactly one match
-r <query> -- <args>  # pass extra args to the matched script
-r --help             # show help
+r                 # open picker with all scripts
+r <query>         # filter scripts; run directly if exactly one match
+r <query> <args>  # pass extra args through to the matched script
+r -p <query>      # print the resolved command instead of running it
+r --help          # show help
 ```
 
 Before executing, `r` always prints the full command it will run:
 
 ```
 Running: pnpm --filter @my/app run dev
+```
+
+Use `-p` / `--print-command` to resolve a script without executing it:
+
+```bash
+r -p build                # prints: pnpm --filter @my/app run build
 ```
 
 ## Monorepo support
@@ -79,18 +86,12 @@ In a single-package repo, scripts are listed without a prefix.
 
 ## Fallback behavior
 
-If the first argument is a flag (starts with `-`), it is forwarded directly to the package manager without any script matching:
+If the query matches no scripts, it is forwarded to the package manager as-is:
 
 ```bash
-r --filter @scope/api dev   # → runs: pnpm --filter @scope/api dev
-r -D lodash                 # → runs: pnpm -D lodash
-```
-
-If the query matches no scripts, it is also forwarded to the package manager as-is:
-
-```bash
-r tsc            # no script named "tsc" → runs: pnpm tsc
-r add lodash     # → runs: pnpm add lodash
+r tsc          # no script named "tsc" → runs: pnpm tsc
+r -p tsc       # no script named "tsc" → prints: pnpm tsc
+r add lodash   # → runs: pnpm add lodash
 ```
 
 ## Auto-detection
@@ -110,11 +111,11 @@ Must be run from the project root (directory containing `package.json`).
 
 Config is stored in `.bun-scripts/setting.toml` (local) and `~/.bun-scripts/setting.toml` (global). Local takes priority.
 
-Initialize with `r --config init`:
+Initialize with `r --init-config`:
 
 ```bash
-r --config init          # create local .bun-scripts/setting.toml
-r --config init --global # create ~/.bun-scripts/setting.toml
+r --init-config          # create local .bun-scripts/setting.toml
+r --init-config --global # create ~/.bun-scripts/setting.toml
 ```
 
 Then edit the file directly — TOML supports comments, so each option is documented inline:

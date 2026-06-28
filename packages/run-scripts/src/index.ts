@@ -12,14 +12,18 @@
  * - With no query, opens a picker. With a query, runs directly if there
  *   is exactly one fuzzy match, otherwise pre-fills the picker search.
  * - Picker uses fzf if available, otherwise falls back to @inquirer/search.
- * - If the first arg is a flag, forwards all args to the package manager.
+ * - With --print-command, prints the resolved command instead of running it.
  * - If the query matches no scripts, forwards it to the package manager as-is.
  *
  * Usage:
  *   r                    Open picker
  *   r <query>            Filter scripts by fuzzy query
- *   r <query> -- <args>  Pass extra args to the script
- *   r --config [init]    Init config file (local or global)
+ *   r <query> <args>     Pass extra args through to the script
+ *   r --print-command <query>
+ *                        Print the resolved command instead of running it
+ *   r --init-config      Init config file
+ *   r --init-config --global
+ *                        Init global config file
  *   r --help             Show this help
  */
 
