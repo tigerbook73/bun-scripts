@@ -76,6 +76,11 @@ export class PickerService implements IPickerService {
         return list.map((c) => ({ name: c.name, value: c.name, description: c.description }));
       },
       pageSize: 15,
+      theme: {
+        style: {
+          keysHelpTip: () => undefined,
+        },
+      },
     });
   }
 }

@@ -5,8 +5,8 @@
  * Changes from upstream:
  * - SearchConfig.initialInput: pre-fills the search box and triggers the initial source call
  * - useEffect on mount: writes initialInput into rl so rl.line stays in sync with state
- * - Escape key: clears input (eagerly sets full list + skipNextFetch to avoid loading flash) when
- *   non-empty, or cancels and returns undefined when already empty
+ * - Escape key: clears input when non-empty, or cancels and returns undefined when already empty.
+ *   Handled via raw stdin data listener to bypass readline's 500ms ESC-sequence detection timeout.
  * - keysHelpTip: adds Esc hint that toggles between "clear" and "cancel"
  */
 import {
@@ -85,6 +85,7 @@ type SearchConfig<Value = string> = {
   theme?: PartialDeep<Theme<SearchTheme>>;
   // +++ mysearch additions +++
   initialInput?: string;
+  // +++
 };
 
 type Item<Value> = Separator | NormalizedChoice<Value>;
@@ -131,14 +132,16 @@ export default createPrompt(
     const theme = makeTheme<SearchTheme>(searchTheme, config.theme);
     const [status, setStatus] = useState<Status>("loading");
 
-    // +++ initialInput: pre-fill search term instead of starting empty
+    // +++ mysearch additions: initialInput pre-fills the search box +++
     const [searchTerm, setSearchTerm] = useState<string>(config.initialInput ?? "");
+    // +++
     const [searchResults, setSearchResults] = useState<ReadonlyArray<Item<Value>>>([]);
     const [searchError, setSearchError] = useState<string>();
     const defaultApplied = useRef(false);
-    // skip the useEffect fetch triggered by Escape-clear; full list is set eagerly instead
-    const skipNextFetch = useRef(false);
-
+    // +++ mysearch additions: searchTermRef lets the stable onData closure read the latest searchTerm +++
+    const searchTermRef = useRef(searchTerm);
+    searchTermRef.current = searchTerm;
+    // +++
     const prefix = usePrefix({ status, theme });
 
     const bounds = useMemo(() => {
@@ -150,19 +153,38 @@ export default createPrompt(
 
     const [active = bounds.first, setActive] = useState<number>();
 
-    // +++ sync initialInput into rl so the input box shows content and rl.line stays in sync
+    // +++ mysearch additions +++
+    // Writes initialInput into rl so the input box shows content and rl.line stays in sync.
+    // Also intercepts raw stdin bytes to handle Escape immediately, bypassing readline's 500ms
+    // escape-sequence detection timeout. Bun does not expose readline's escapeCodeTimeout.
+    // A single 0x1b byte is a standalone Escape; arrow keys send 3+ bytes in one chunk.
     useEffect((rl) => {
       if (config.initialInput) {
         rl.write(config.initialInput);
       }
+
+      const onData = (chunk: Buffer | string) => {
+        const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string);
+        if (bytes.length !== 1 || bytes[0] !== 0x1b) return;
+
+        if (searchTermRef.current) {
+          rl.clearLine(0);
+          setActive(undefined);
+          setSearchTerm(""); // useEffect re-fetches and restores the full list
+        } else {
+          setStatus("done");
+          done(undefined as Value);
+        }
+      };
+
+      process.stdin.on("data", onData);
+      return () => {
+        process.stdin.off("data", onData);
+      };
     }, []);
+    // +++
 
     useEffect(() => {
-      if (skipNextFetch.current) {
-        skipNextFetch.current = false;
-        return;
-      }
-
       const controller = new AbortController();
 
       setStatus("loading");
@@ -210,25 +232,6 @@ export default createPrompt(
     const selectedChoice = searchResults[active] as NormalizedChoice<Value> | void;
 
     useKeypress(async (key, rl) => {
-      // +++ Escape: clear input if non-empty, cancel if already empty
-      if (key.name === "escape") {
-        if (searchTerm) {
-          rl.clearLine(0);
-          skipNextFetch.current = true;
-          // eagerly populate full list so there is no loading flash after clear
-          const raw = config.source(undefined, { signal: new AbortController().signal });
-          const results = raw instanceof Promise ? await raw : raw;
-          setSearchResults(normalizeChoices(results));
-          setActive(undefined);
-          setStatus("idle");
-          setSearchTerm("");
-        } else {
-          setStatus("done");
-          done(undefined as Value);
-        }
-        return;
-      }
-
       if (isEnterKey(key)) {
         if (selectedChoice) {
           setStatus("loading");
@@ -277,8 +280,9 @@ export default createPrompt(
     const helpLine = theme.style.keysHelpTip([
       ["↑↓", "navigate"],
       ["⏎", "select"],
-      // +++ Esc hint changes depending on whether input is empty
+      // +++ mysearch additions: Esc hint toggles between "clear" and "cancel" +++
       ["Esc", searchTerm ? "clear" : "cancel"],
+      // +++
     ]);
 
     const page = usePagination({
