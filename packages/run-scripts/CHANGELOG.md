@@ -1,5 +1,11 @@
 # @tigerbook/run-scripts
 
+## 0.4.1
+
+### Patch Changes
+
+- Eliminate 500ms Escape key latency in mysearch prompt by intercepting raw stdin bytes instead of waiting for readline's escape-sequence detection timeout.
+
 ## 0.4.0
 
 ### Minor Changes
